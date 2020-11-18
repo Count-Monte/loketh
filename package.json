@@ -1,0 +1,20 @@
+{
+  "name": "@rymanalu/loketh",
+  "version": "0.1.0",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://rymanalu@github.com/rymanalu/loketh.git"
+  },
+  "author": "Roni Yusuf <https://rymanalu.github.io/>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/rymanalu/loketh/issues"
+  },
+  "homepage": "https://github.com/rymanalu/loketh#readme",
+  "devDependencies": {
+    "@openzeppelin/contracts": "^3.2.0",
+    "@openzeppelin/test-helpers": "^0.5.9",
+    "faker": "^5.1.0"
+  }
+}
