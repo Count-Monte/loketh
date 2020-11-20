@@ -69,46 +69,50 @@ class Events extends Component {
         <h1>Events</h1>
         {
           loaded ? (
-            <CardColumns>
-              {events.map((event, i) => {
-                return (
-                  <Card key={i}>
-                    <Card.Body>
-                      <Card.Title>
-                        <Card.Link>
-                          {strLimit(event.name, 30)}
-                        </Card.Link>
-                      </Card.Title>
-                      <Card.Text>
-                        <IconWithText icon={FaCalendarAlt}>
-                          {
-                            event.onlyOneDay ? event.startTime : (
-                              `${event.startTime} - ${event.endTime}`
-                            )
-                          }
-                        </IconWithText>
-                      </Card.Text>
-                      <Card.Text>
-                        <IconWithText icon={FaMoneyBillAlt}>
-                          {this.props.web3.utils.fromWei(
-                            event.price, 'ether'
-                          )} ETH
-                        </IconWithText>
-                      </Card.Text>
-                    </Card.Body>
-                    <Card.Footer>
-                      <Card.Text>
-                        <IconWithText icon={FaUserCircle}>
+            events.length > 0 ? (
+              <CardColumns>
+                {events.map((event, i) => {
+                  return (
+                    <Card key={i}>
+                      <Card.Body>
+                        <Card.Title>
                           <Card.Link>
-                            {getShortAddress(event.organizer)}
+                            {strLimit(event.name, 30)}
                           </Card.Link>
-                        </IconWithText>
-                      </Card.Text>
-                    </Card.Footer>
-                  </Card>
-                );
-              })}
-            </CardColumns>
+                        </Card.Title>
+                        <Card.Text>
+                          <IconWithText icon={FaCalendarAlt}>
+                            {
+                              event.onlyOneDay ? event.startTime : (
+                                `${event.startTime} - ${event.endTime}`
+                              )
+                            }
+                          </IconWithText>
+                        </Card.Text>
+                        <Card.Text>
+                          <IconWithText icon={FaMoneyBillAlt}>
+                            {this.props.web3.utils.fromWei(
+                              event.price, 'ether'
+                            )} ETH
+                          </IconWithText>
+                        </Card.Text>
+                      </Card.Body>
+                      <Card.Footer>
+                        <Card.Text>
+                          <IconWithText icon={FaUserCircle}>
+                            <Card.Link>
+                              {getShortAddress(event.organizer)}
+                            </Card.Link>
+                          </IconWithText>
+                        </Card.Text>
+                      </Card.Footer>
+                    </Card>
+                  );
+                })}
+              </CardColumns>
+            ) : (
+              <p>There are no upcoming events at this time.</p>
+            )
           ) : (
             <Spinner animation="border" />
           )
