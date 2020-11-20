@@ -18,8 +18,8 @@ class Navbar extends Component {
           <RBNavbar.Brand>Lok<strong>eth</strong></RBNavbar.Brand>
           <RBNavbar.Toggle />
           <RBNavbar.Collapse>
-            <Nav className="mr-auto" defaultActiveKey="home">
-              <Nav.Link to="/" as={Link} eventKey="home">
+            <Nav className="mr-auto" defaultActiveKey="events">
+              <Nav.Link to="/" as={Link} eventKey="events">
                 Events
               </Nav.Link>
               <Nav.Link to="/about" as={Link} eventKey="about">
