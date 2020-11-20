@@ -1,6 +1,8 @@
 import React, { Component } from 'react';
-import { Container, Nav, Navbar as RBNavbar } from 'react-bootstrap';
+import { Container, Nav, Navbar as RBNavbar, Spinner } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
+
+import { getShortAddress } from '../utils';
 
 class Navbar extends Component {
   render() {
@@ -11,23 +13,29 @@ class Navbar extends Component {
     }
 
     return (
-      <RBNavbar bg="dark" expand="md" fixed="top" variant="dark">
+      <RBNavbar bg="dark" expand="md" sticky="top" variant="dark">
         <Container>
           <RBNavbar.Brand>Lok<strong>eth</strong></RBNavbar.Brand>
           <RBNavbar.Toggle />
           <RBNavbar.Collapse>
-            <Nav className="mr-auto">
-              <Nav.Link to="/" as={Link}>Events</Nav.Link>
-              <Nav.Link to="/about" as={Link}>About</Nav.Link>
+            <Nav className="mr-auto" defaultActiveKey="home">
+              <Nav.Link to="/" as={Link} eventKey="home">
+                Events
+              </Nav.Link>
+              <Nav.Link to="/about" as={Link} eventKey="about">
+                About
+              </Nav.Link>
             </Nav>
             {
-              account.length > 0 && (
+              account.length > 0 ? (
                 <RBNavbar.Text>
                   {'Signed in as: '}
                   <strong>
-                    {`${account.substr(0, 6)}...${account.substr(-4)}`}
+                    {getShortAddress(account)}
                   </strong>
                 </RBNavbar.Text>
+              ) : (
+                <Spinner animation="grow" variant="light" />
               )
             }
           </RBNavbar.Collapse>

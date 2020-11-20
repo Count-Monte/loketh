@@ -4,9 +4,9 @@ import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-import { Navbar } from './components';
+import { Footer, Navbar } from './components';
 import LokethContract from './contracts/Loketh.json';
-import { About, Home } from './pages';
+import { About, Events } from './pages';
 import getWeb3 from './getWeb3';
 
 import './App.css';
@@ -14,7 +14,8 @@ import './App.css';
 class App extends Component {
   state = {
     accounts: [],
-    contract: null,
+    initialized: false,
+    loketh: null,
     web3: null
   };
 
@@ -33,18 +34,18 @@ class App extends Component {
         deployedNetwork && deployedNetwork.address,
       );
 
-      this.setState({ accounts, contract: instance, web3 });
+      this.setState({ accounts, initialized: true, loketh: instance, web3 });
     } catch (error) {
       // Catch any errors for any of the above operations.
       alert(
-        `Failed to load web3, accounts, or contract. Check console for details.`,
+        'Failed to load web3, accounts, or contract. Check console for details.',
       );
       console.error(error);
     }
   };
 
   render() {
-    const { accounts } = this.state;
+    const { accounts, initialized, loketh, web3 } = this.state;
 
     return (
       <Router>
@@ -55,9 +56,17 @@ class App extends Component {
               <About />
             </Route>
             <Route path="/">
-              <Home />
+              <Events
+                accounts={accounts}
+                initialized={initialized}
+                loketh={loketh}
+                web3={web3}
+              />
             </Route>
           </Switch>
+        </Container>
+        <Container>
+          <Footer />
         </Container>
       </Router>
     );
