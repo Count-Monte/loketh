@@ -22,6 +22,9 @@ class Navbar extends Component {
               <Nav.Link to="/" as={Link} eventKey="events">
                 Events
               </Nav.Link>
+              <Nav.Link to="/user/events" as={Link} eventKey="my-events">
+                My Events
+              </Nav.Link>
               <Nav.Link to="/about" as={Link} eventKey="about">
                 About
               </Nav.Link>
