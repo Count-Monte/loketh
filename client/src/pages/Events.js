@@ -27,14 +27,18 @@ class Events extends Component {
     try {
       this.setState({ events: [], loaded: false });
 
-      const { loketh } = this.props;
+      const { accounts, loketh } = this.props;
 
-      const totalEvents = await loketh.methods.totalEvents().call();
+      const totalEvents = await loketh.methods.totalEvents().call({
+        from: accounts[0]
+      });
 
       const events = [];
 
       for (let i = totalEvents; i > 0; i--) {
-        const event = await loketh.methods.getEvent(i).call();
+        const event = await loketh.methods.getEvent(i).call({
+          from: accounts[0]
+        });
 
         const startTime = epochToEventDate(event['2']);
         const endTime = epochToEventDate(event['3']);
