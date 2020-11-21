@@ -32,9 +32,6 @@ contract Loketh is Context {
 
         // Number of maximum participants.
         uint quota;
-
-        // Counter to track how many tickets sold.
-        Counters.Counter soldCounter;
     }
 
     /// @dev An array containing all events in Loketh.
@@ -45,6 +42,9 @@ contract Loketh is Context {
 
     /// @dev A mapping from event owners to a set of event IDs that they owned.
     mapping(address => EnumerableSet.UintSet) private _organizerToEventIdsOwned;
+
+    /// @dev A mapping of event ID to its ticket sold counter.
+    mapping(uint => Counters.Counter) private _eventSoldCounter;
 
     /// @dev Emitted when new event created.
     event EventCreated(uint indexed newEventId, address indexed organizer);
@@ -149,6 +149,7 @@ contract Loketh is Context {
         );
 
         Event storage e = _events[_id];
+        uint soldCounter = _eventSoldCounter[_id].current();
 
         return (
             e.name,
@@ -157,7 +158,7 @@ contract Loketh is Context {
             e.endTime,
             e.price,
             e.quota,
-            e.soldCounter.current()
+            soldCounter
         );
     }
 
@@ -204,8 +205,7 @@ contract Loketh is Context {
             startTime: _startTime,
             endTime: _endTime,
             price: _price,
-            quota: _quota,
-            soldCounter: Counters.Counter(0)
+            quota: _quota
         });
 
         _events.push(_event);

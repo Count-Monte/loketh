@@ -91,7 +91,8 @@ contract('Loketh', accounts => {
     });
 
     it('returns a list of event IDs owned by given address', async () => {
-      const numberOfEvents = faker.random.number(4) + 1; // Add one, only to make sure zero never assigned.
+      // Add one, only to make sure zero never assigned.
+      const numberOfEvents = faker.random.number(4) + 1;
       const eventIds = [];
 
       for (let i = 0; i < numberOfEvents; i++) {
@@ -128,7 +129,8 @@ contract('Loketh', accounts => {
     });
 
     it('reverts when given event ID is greater than events length', async () => {
-      const numberOfEvents = faker.random.number(4) + 1; // Add one, only to make sure zero never assigned.
+      // Add one, only to make sure zero never assigned.
+      const numberOfEvents = faker.random.number(4) + 1;
 
       for (let i = 0; i < numberOfEvents; i++) {
         const startTime = dateToUnixEpochTimeInSeconds(faker.date.future());
@@ -198,7 +200,8 @@ contract('Loketh', accounts => {
     });
 
     it('returns total number of events owned by given address', async () => {
-      const numberOfEvents = faker.random.number(4) + 1; // Add one, only to make sure zero never assigned.
+      // Add one, only to make sure zero never assigned.
+      const numberOfEvents = faker.random.number(4) + 1;
 
       for (let i = 0; i < numberOfEvents; i++) {
         const startTime = dateToUnixEpochTimeInSeconds(faker.date.future());
