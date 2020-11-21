@@ -103,10 +103,25 @@ contract('Loketh', accounts => {
       );
     });
 
-    it('increments the sold counter when participant buy a ticket', async () => {
-      let event = await loketh.getEvent(
-        eventId, { from: secondAccount }
+    it('adds the money from participants to its money jar', async () => {
+      let event = await loketh.getEvent(eventId);
+
+      const prevMoneyCollected = event['7'];
+
+      assert.equal(prevMoneyCollected, 0);
+
+      await loketh.buyTicket(
+        eventId, { from: secondAccount, value: price }
       );
+
+      event = await loketh.getEvent(eventId);
+
+      assert.equal(event['7'], price);
+      assert.notEqual(event['7'], prevMoneyCollected);
+    });
+
+    it('increments the sold counter when participant buy a ticket', async () => {
+      let event = await loketh.getEvent(eventId);
 
       const prevSoldCounter = event['6'];
 
@@ -116,13 +131,26 @@ contract('Loketh', accounts => {
         eventId, { from: secondAccount, value: price }
       );
 
-      event = await loketh.getEvent(
-        eventId, { from: secondAccount }
-      );
+      event = await loketh.getEvent(eventId);
 
       assert.equal(event['6'], 1);
       assert.notEqual(event['6'], prevSoldCounter);
     })
+
+    it('adds issued ticket to the list of tickets owned by participant', async () => {
+      let ticketsOwned = await loketh.ticketsOf(secondAccount);
+
+      assert.equal(ticketsOwned, 0);
+
+      await loketh.buyTicket(
+        eventId, { from: secondAccount, value: price }
+      );
+
+      ticketsOwned = await loketh.ticketsOf(secondAccount);
+
+      assert.equal(ticketsOwned, 1);
+      assert.notEqual(ticketsOwned, 0);
+    });
 
     it('successfully issued a ticket for the participant', async () => {
       const receipt = await loketh.buyTicket(
@@ -187,6 +215,26 @@ contract('Loketh', accounts => {
       );
     });
 
+    it('adds new event to the list of events owned by organizer', async () => {
+      let eventsOwned = await loketh.eventsOf(firstAccount);
+
+      assert.equal(eventsOwned, 0);
+
+      await loketh.createEvent(
+        faker.lorem.words(),
+        futureStartTime,
+        futureStartTime + faker.random.number(),
+        faker.random.number(),
+        faker.random.number(),
+        { from: firstAccount }
+      );
+
+      eventsOwned = await loketh.eventsOf(firstAccount);
+
+      assert.equal(eventsOwned, 1);
+      assert.notEqual(eventsOwned, 0);
+    });
+
     it('creates a new event and emits the `EventCreated` event', async () => {
       const receipt = await loketh.createEvent(
         faker.lorem.words(),
@@ -205,6 +253,10 @@ contract('Loketh', accounts => {
   });
 
   describe('eventsOfOwner', () => {
+    it('returns an empty array if given address has zero events', async () => {
+      assert.deepEqual(await loketh.eventsOfOwner(otherAccount), []);
+    });
+
     it('returns a list of event IDs owned by given address', async () => {
       // Add one, only to make sure zero never assigned.
       const numberOfEvents = faker.random.number(4) + 1;
@@ -238,7 +290,7 @@ contract('Loketh', accounts => {
   describe('getEvent', () => {
     it('reverts when given event ID is less than one', async () => {
       await expectRevert(
-        loketh.getEvent(0, { from: firstAccount }),
+        loketh.getEvent(0),
         'Loketh: event ID must be at least 1'
       );
     });
@@ -261,7 +313,7 @@ contract('Loketh', accounts => {
       }
 
       await expectRevert(
-        loketh.getEvent(numberOfEvents + 1, { from: firstAccount }),
+        loketh.getEvent(numberOfEvents + 1),
         'Loketh: event ID must be lower than `_events` length'
       );
     });
@@ -294,7 +346,7 @@ contract('Loketh', accounts => {
         { from: otherAccount }
       );
 
-      const secondEvent = await loketh.getEvent(2, { from: firstAccount });
+      const secondEvent = await loketh.getEvent(2);
 
       assert.notEqual(secondEvent['0'], firstEventName);
       assert.equal(secondEvent['0'], secondEventName);
@@ -309,6 +361,10 @@ contract('Loketh', accounts => {
   });
 
   describe('ticketsOfOwner', () => {
+    it('returns an empty array if given address has zero tickets', async () => {
+      assert.deepEqual(await loketh.ticketsOfOwner(otherAccount), []);
+    });
+
     it('returns a list of ticket (event) IDs owned by given address', async () => {
       // Add one, only to make sure zero never assigned.
       const numberOfTickets = faker.random.number(4) + 1;
@@ -347,7 +403,7 @@ contract('Loketh', accounts => {
 
   describe('totalEvents', () => {
     it('starts at zero', async () => {
-      const totalEvents = await loketh.totalEvents({ from: firstAccount });
+      const totalEvents = await loketh.totalEvents();
 
       assert.equal(totalEvents, 0);
     });
@@ -355,7 +411,7 @@ contract('Loketh', accounts => {
     it('increments when a new event created', async () => {
       const startTime = dateToUnixEpochTimeInSeconds(faker.date.future());
 
-      assert.equal(await loketh.totalEvents({ from: firstAccount }), 0);
+      assert.equal(await loketh.totalEvents(), 0);
 
       await loketh.createEvent(
         faker.lorem.words(),
@@ -365,7 +421,7 @@ contract('Loketh', accounts => {
         faker.random.number()
       );
 
-      assert.equal(await loketh.totalEvents({ from: firstAccount }), 1);
+      assert.equal(await loketh.totalEvents(), 1);
     });
   });
 
