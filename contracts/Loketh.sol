@@ -59,10 +59,10 @@ contract Loketh is Context {
     /// @dev Validate given event ID. Used when getting an event.
     /// @param _eventId The event id.
     modifier validEventId(uint _eventId) {
-        require(_eventId > 0, "Loketh: event ID must be at least 1");
+        require(_eventId > 0, "Loketh: event ID must be at least one.");
         require(
             _eventId < _events.length,
-            "Loketh: event ID must be lower than `_events` length"
+            "Loketh: event ID must be lower than `_events` length."
         );
         _;
     }
@@ -130,14 +130,14 @@ contract Loketh is Context {
         external
         returns (uint)
     {
-        require(_quota > 0, "Loketh: `_quota` must be at least one");
+        require(_quota > 0, "Loketh: `_quota` must be at least one.");
         require(
             _startTime > block.timestamp,
-            "Loketh: `_startTime` must be greater than `block.timestamp`"
+            "Loketh: `_startTime` must be greater than `block.timestamp`."
         );
         require(
             _endTime > _startTime,
-            "Loketh: `_endTime` must be greater than `_startTime`"
+            "Loketh: `_endTime` must be greater than `_startTime`."
         );
 
         uint newEventId = _createEvent(

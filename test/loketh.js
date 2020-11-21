@@ -40,14 +40,14 @@ contract('Loketh', accounts => {
     it('reverts when given event ID is less than one', async () => {
       await expectRevert(
         loketh.buyTicket(0, { from: secondAccount }),
-        'Loketh: event ID must be at least 1'
+        'Loketh: event ID must be at least one.'
       );
     });
 
     it('reverts when given event ID is greater than events length', async () => {
       await expectRevert(
         loketh.buyTicket(eventId + 1, { from: secondAccount }),
-        'Loketh: event ID must be lower than `_events` length'
+        'Loketh: event ID must be lower than `_events` length.'
       );
     });
 
@@ -181,7 +181,7 @@ contract('Loketh', accounts => {
           0,
           { from: firstAccount }
         ),
-        'Loketh: `_quota` must be at least one'
+        'Loketh: `_quota` must be at least one.'
       );
     });
 
@@ -197,7 +197,7 @@ contract('Loketh', accounts => {
           faker.random.number(),
           { from: firstAccount }
         ),
-        'Loketh: `_startTime` must be greater than `block.timestamp`'
+        'Loketh: `_startTime` must be greater than `block.timestamp`.'
       );
     });
 
@@ -211,7 +211,7 @@ contract('Loketh', accounts => {
           faker.random.number(),
           { from: firstAccount }
         ),
-        'Loketh: `_endTime` must be greater than `_startTime`'
+        'Loketh: `_endTime` must be greater than `_startTime`.'
       );
     });
 
@@ -291,7 +291,7 @@ contract('Loketh', accounts => {
     it('reverts when given event ID is less than one', async () => {
       await expectRevert(
         loketh.getEvent(0),
-        'Loketh: event ID must be at least 1'
+        'Loketh: event ID must be at least one.'
       );
     });
 
@@ -314,7 +314,7 @@ contract('Loketh', accounts => {
 
       await expectRevert(
         loketh.getEvent(numberOfEvents + 1),
-        'Loketh: event ID must be lower than `_events` length'
+        'Loketh: event ID must be lower than `_events` length.'
       );
     });
 
