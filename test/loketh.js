@@ -308,6 +308,43 @@ contract('Loketh', accounts => {
     });
   });
 
+  describe('ticketsOfOwner', () => {
+    it('returns a list of ticket (event) IDs owned by given address', async () => {
+      // Add one, only to make sure zero never assigned.
+      const numberOfTickets = faker.random.number(4) + 1;
+      const eventIds = [];
+
+      for (let i = 1; i <= numberOfTickets; i++) {
+        const assignToSecondAccount = faker.random.boolean();
+        const startTime = dateToUnixEpochTimeInSeconds(faker.date.future());
+        const price = faker.random.number();
+
+        await loketh.createEvent(
+          faker.lorem.words(),
+          startTime,
+          startTime + faker.random.number(),
+          price,
+          faker.random.number(),
+          { from: firstAccount }
+        );
+
+        if (assignToSecondAccount) {
+          const totalEvents = await loketh.totalEvents();
+
+          await loketh.buyTicket(
+            totalEvents, { from: secondAccount, value: price }
+          );
+
+          eventIds.push(totalEvents);
+        }
+      }
+
+      const secondAccountEventIds = await loketh.ticketsOfOwner(secondAccount);
+
+      assert.deepEqual(secondAccountEventIds, eventIds);
+    });
+  });
+
   describe('totalEvents', () => {
     it('starts at zero', async () => {
       const totalEvents = await loketh.totalEvents({ from: firstAccount });

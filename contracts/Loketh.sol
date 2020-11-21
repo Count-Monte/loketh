@@ -210,6 +210,30 @@ contract Loketh is Context {
         );
     }
 
+    /// @notice Returns a list of all ticket (event) IDs assigned to an address.
+    /// @param _address The ticket owner address.
+    /// @return The ticket (event) IDs.
+    function ticketsOfOwner(address _address)
+        external
+        view
+        returns (uint[] memory)
+    {
+        uint ticketsCount = ticketsOf(_address);
+
+        if (ticketsCount == 0) {
+            // Return an empty array.
+            return new uint[](0);
+        }
+
+        uint[] memory eventIds = new uint[](ticketsCount);
+
+        for (uint i = 0; i < ticketsCount; i++) {
+            eventIds[i] = _participantToEventIdsOwned[_address].at(i);
+        }
+
+        return eventIds;
+    }
+
     /// @notice Returns the total number of events.
     /// @return Returns the total number of events, without the Genesis.
     function totalEvents() external view returns (uint) {
