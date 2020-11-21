@@ -148,7 +148,7 @@ contract Loketh is Context {
             "Loketh: event ID must be lower than `_events` length"
         );
 
-        Event storage e = _events[_id];
+        Event memory e = _events[_id];
         uint soldCounter = _eventSoldCounter[_id].current();
 
         return (
