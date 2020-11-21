@@ -103,9 +103,10 @@ contract Loketh is Context {
             _eventParticipants[_eventId].contains(participant) == false,
             "Loketh: Participant already bought the ticket."
         );
-
-        uint participants = _eventParticipants[_eventId].length();
-        require(participants < e.quota, "Loketh: No quota left.");
+        require(
+            _eventParticipants[_eventId].length() < e.quota,
+            "Loketh: No quota left."
+        );
 
         _moneyJar[_eventId] = _moneyJar[_eventId].add(msg.value);
 
@@ -161,11 +162,6 @@ contract Loketh is Context {
     {
         uint eventsCount = eventsOf(_address);
 
-        if (eventsCount == 0) {
-            // Return an empty array.
-            return new uint[](0);
-        }
-
         uint[] memory eventIds = new uint[](eventsCount);
 
         for (uint i = 0; i < eventsCount; i++) {
@@ -219,11 +215,6 @@ contract Loketh is Context {
         returns (uint[] memory)
     {
         uint ticketsCount = ticketsOf(_address);
-
-        if (ticketsCount == 0) {
-            // Return an empty array.
-            return new uint[](0);
-        }
 
         uint[] memory eventIds = new uint[](ticketsCount);
 
