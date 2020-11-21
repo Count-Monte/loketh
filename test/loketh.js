@@ -15,6 +15,127 @@ contract('Loketh', accounts => {
     loketh = await Loketh.new({ from: firstAccount });
   });
 
+  describe('buyTicket', () => {
+    // Event ID created by `firstAccount`.
+    const eventId = 1;
+
+    let price, quota;
+
+    beforeEach(async () => {
+      price = faker.random.number();
+      quota = faker.random.number();
+
+      const startTime = dateToUnixEpochTimeInSeconds(faker.date.future());
+
+      await loketh.createEvent(
+        faker.lorem.words(),
+        startTime,
+        startTime + faker.random.number(),
+        price,
+        quota,
+        { from: firstAccount }
+      );
+    });
+
+    it('reverts when given event ID is less than one', async () => {
+      await expectRevert(
+        loketh.buyTicket(0, { from: secondAccount }),
+        'Loketh: event ID must be at least 1'
+      );
+    });
+
+    it('reverts when given event ID is greater than events length', async () => {
+      await expectRevert(
+        loketh.buyTicket(eventId + 1, { from: secondAccount }),
+        'Loketh: event ID must be lower than `_events` length'
+      );
+    });
+
+    it('reverts when the organizer buy their own event', async () => {
+      await expectRevert(
+        loketh.buyTicket(eventId, { from: firstAccount }),
+        'Loketh: Organizer can not buy their own event.'
+      );
+    });
+
+    it('reverts when participant pay with different amount of money', async () => {
+      await expectRevert(
+        loketh.buyTicket(eventId, { from: secondAccount, value: price + 1 }),
+        'Loketh: Must pay exactly same with the price.'
+      );
+
+      await expectRevert(
+        loketh.buyTicket(eventId, { from: secondAccount, value: price - 1 }),
+        'Loketh: Must pay exactly same with the price.'
+      );
+    });
+
+    it('reverts when participant already bought the ticket', async () => {
+      await loketh.buyTicket(eventId, { from: secondAccount, value: price });
+
+      await expectRevert(
+        loketh.buyTicket(eventId, { from: secondAccount, value: price }),
+        'Loketh: Participant already bought the ticket.'
+      );
+    });
+
+    it('reverts when no quota left', async () => {
+      const startTime = dateToUnixEpochTimeInSeconds(faker.date.future());
+
+      // Create a new event with only one quota...
+      // Event ID: 2
+      await loketh.createEvent(
+        faker.lorem.words(),
+        startTime,
+        startTime + faker.random.number(),
+        price,
+        1,
+        { from: firstAccount }
+      );
+
+      // The only one quota booked by `secondAccount`...
+      await loketh.buyTicket(2, { from: secondAccount, value: price });
+
+      // `otherAccount` will try to buy but it fails...
+      await expectRevert(
+        loketh.buyTicket(2, { from: otherAccount, value: price }),
+        'Loketh: No quota left.'
+      );
+    });
+
+    it('increments the sold counter when participant buy a ticket', async () => {
+      let event = await loketh.getEvent(
+        eventId, { from: secondAccount }
+      );
+
+      const prevSoldCounter = event['6'];
+
+      assert.equal(prevSoldCounter, 0);
+
+      await loketh.buyTicket(
+        eventId, { from: secondAccount, value: price }
+      );
+
+      event = await loketh.getEvent(
+        eventId, { from: secondAccount }
+      );
+
+      assert.equal(event['6'], 1);
+      assert.notEqual(event['6'], prevSoldCounter);
+    })
+
+    it('successfully issued a ticket for the participant', async () => {
+      const receipt = await loketh.buyTicket(
+        eventId, { from: secondAccount, value: price }
+      );
+
+      await expectEvent(receipt, 'TicketIssued', {
+        eventId: new BN(eventId),
+        participant: secondAccount
+      });
+    });
+  });
+
   describe('createEvent', () => {
     let futureStartTime;
 
@@ -183,29 +304,7 @@ contract('Loketh', accounts => {
       assert.equal(secondEvent['4'], price);
       assert.equal(secondEvent['5'], quota);
       assert.equal(secondEvent['6'], 0);
-    });
-  });
-
-  describe('eventsOf', () => {
-    it('returns total number of events owned by given address', async () => {
-      // Add one, only to make sure zero never assigned.
-      const numberOfEvents = faker.random.number(4) + 1;
-
-      for (let i = 0; i < numberOfEvents; i++) {
-        const startTime = dateToUnixEpochTimeInSeconds(faker.date.future());
-
-        await loketh.createEvent(
-          faker.lorem.words(),
-          startTime,
-          startTime + faker.random.number(),
-          faker.random.number(),
-          faker.random.number(),
-          { from: secondAccount }
-        );
-      }
-
-      assert.equal(await loketh.eventsOf(firstAccount), 0);
-      assert.equal(await loketh.eventsOf(secondAccount), numberOfEvents);
+      assert.equal(secondEvent['7'], 0);
     });
   });
 
@@ -230,6 +329,29 @@ contract('Loketh', accounts => {
       );
 
       assert.equal(await loketh.totalEvents({ from: firstAccount }), 1);
+    });
+  });
+
+  describe('eventsOf', () => {
+    it('returns total number of events owned by given address', async () => {
+      // Add one, only to make sure zero never assigned.
+      const numberOfEvents = faker.random.number(4) + 1;
+
+      for (let i = 0; i < numberOfEvents; i++) {
+        const startTime = dateToUnixEpochTimeInSeconds(faker.date.future());
+
+        await loketh.createEvent(
+          faker.lorem.words(),
+          startTime,
+          startTime + faker.random.number(),
+          faker.random.number(),
+          faker.random.number(),
+          { from: secondAccount }
+        );
+      }
+
+      assert.equal(await loketh.eventsOf(firstAccount), 0);
+      assert.equal(await loketh.eventsOf(secondAccount), numberOfEvents);
     });
   });
 });

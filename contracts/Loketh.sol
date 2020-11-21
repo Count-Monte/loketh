@@ -2,6 +2,7 @@
 pragma solidity ^0.6.0;
 
 import "@openzeppelin/contracts/GSN/Context.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 
@@ -9,7 +10,9 @@ import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 /// @author Roni Yusuf (https://rymanalu.github.io/)
 contract Loketh is Context {
     using Counters for Counters.Counter;
+    using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableSet for EnumerableSet.UintSet;
+    using SafeMath for uint;
 
     /// @dev The main Event struct. Every event in Loketh is
     ///  represented by a copy of this structure.
@@ -40,14 +43,40 @@ contract Loketh is Context {
     ///  accessible to end-user.
     Event[] private _events;
 
-    /// @dev A mapping from event owners to a set of event IDs that they owned.
+    /// @dev A mapping of organizer to a set of event IDs that they owned.
     mapping(address => EnumerableSet.UintSet) private _organizerToEventIdsOwned;
 
     /// @dev A mapping of event ID to its ticket sold counter.
     mapping(uint => Counters.Counter) private _eventSoldCounter;
 
+    /// @dev A mapping of event ID to its participants.
+    mapping(uint => EnumerableSet.AddressSet) private _eventParticipants;
+
+    /// @dev A mapping of event ticket holders to a set of event IDs
+    ///  that they owned the ticket.
+    mapping(address => EnumerableSet.UintSet) private _participantToEventIdsOwned;
+
+    /// @dev A mapping of event ID to total money collected from buyer.
+    ///  Loketh changes the event balance when someone buy a ticket or
+    ///  organizer withdraws the money.
+    mapping(uint => uint) private _moneyJar;
+
+    /// @dev Validate given event ID. Used when getting an event.
+    /// @param _eventId The event id.
+    modifier validEventId(uint _eventId) {
+        require(_eventId > 0, "Loketh: event ID must be at least 1");
+        require(
+            _eventId < _events.length,
+            "Loketh: event ID must be lower than `_events` length"
+        );
+        _;
+    }
+
     /// @dev Emitted when new event created.
     event EventCreated(uint indexed newEventId, address indexed organizer);
+
+    /// @dev Emitted when someone buy a ticket.
+    event TicketIssued(uint indexed eventId, address indexed participant);
 
     /// @dev Initializes contract and create the event zero to its address.
     constructor() public {
@@ -59,6 +88,33 @@ contract Loketh is Context {
             1 wei,
             0
         );
+    }
+
+    /// @notice Let's buy a ticket!
+    /// @param _eventId The event ID.
+    function buyTicket(uint _eventId) external payable validEventId(_eventId) {
+        Event memory e = _events[_eventId];
+        address participant = _msgSender();
+
+        require(
+            participant != e.organizer,
+            "Loketh: Organizer can not buy their own event."
+        );
+        require(
+            msg.value == e.price,
+            "Loketh: Must pay exactly same with the price."
+        );
+        require(
+            _eventParticipants[_eventId].contains(participant) == false,
+            "Loketh: Participant already bought the ticket."
+        );
+
+        uint soldCounter = _eventSoldCounter[_eventId].current();
+        require(soldCounter < e.quota, "Loketh: No quota left.");
+
+        _moneyJar[_eventId] = _moneyJar[_eventId].add(msg.value);
+
+        _buyTicket(_eventId, participant);
     }
 
     /// @notice Let's create a new event!
@@ -131,6 +187,7 @@ contract Loketh is Context {
     function getEvent(uint _id)
         external
         view
+        validEventId(_id)
         returns (
             string memory,
             address,
@@ -138,17 +195,13 @@ contract Loketh is Context {
             uint,
             uint,
             uint,
+            uint,
             uint
         )
     {
-        require(_id > 0, "Loketh: event ID must be at least 1");
-        require(
-            _id < _events.length,
-            "Loketh: event ID must be lower than `_events` length"
-        );
-
         Event memory e = _events[_id];
         uint soldCounter = _eventSoldCounter[_id].current();
+        uint moneyCollected = _moneyJar[_id];
 
         return (
             e.name,
@@ -157,8 +210,15 @@ contract Loketh is Context {
             e.endTime,
             e.price,
             e.quota,
-            soldCounter
+            soldCounter,
+            moneyCollected
         );
+    }
+
+    /// @notice Returns the total number of events.
+    /// @return Returns the total number of events, without the Genesis.
+    function totalEvents() external view returns (uint) {
+        return _events.length - 1;
     }
 
     /// @notice Returns total number of events owned by given address.
@@ -168,13 +228,23 @@ contract Loketh is Context {
         return _organizerToEventIdsOwned[_address].length();
     }
 
-    /// @notice Returns the total number of events.
-    /// @return Returns the total number of events, without the Genesis.
-    function totalEvents() public view returns (uint) {
-        return _events.length - 1;
+    /// @dev A private method that increments the counter, adds participants,
+    ///  add the event ID to the participant, and emit the TicketIssued event.
+    ///  This method doesn't do any checking and should only be called
+    ///  when the input data is known to be valid.
+    /// @param _eventId The event ID.
+    /// @param _participant The event participant.
+    function _buyTicket(uint _eventId, address _participant) private {
+        _eventSoldCounter[_eventId].increment();
+
+        _eventParticipants[_eventId].add(_participant);
+
+        _participantToEventIdsOwned[_participant].add(_eventId);
+
+        emit TicketIssued(_eventId, _participant);
     }
 
-    /// @dev An internal method that creates a new event and stores it.
+    /// @dev A private method that creates a new event and stores it.
     ///  This method doesn't do any checking and should only be called
     ///  when the input data is known to be valid.
     /// @param _name The event name.
@@ -192,7 +262,7 @@ contract Loketh is Context {
         uint _price,
         uint _quota
     )
-        internal
+        private
         returns (uint)
     {
         Event memory _event = Event({
