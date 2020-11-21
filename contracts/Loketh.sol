@@ -223,6 +223,13 @@ contract Loketh is Context {
         return _organizerToEventIdsOwned[_address].length();
     }
 
+    /// @notice Returns total number of tickets owned by given address.
+    /// @param _address The address to check.
+    /// @return The total number of tickets.
+    function ticketsOf(address _address) public view returns (uint) {
+        return _participantToEventIdsOwned[_address].length();
+    }
+
     /// @dev A private method that increments the counter, adds participants,
     ///  add the event ID to the participant, and emit the TicketIssued event.
     ///  This method doesn't do any checking and should only be called

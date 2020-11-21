@@ -354,6 +354,32 @@ contract('Loketh', accounts => {
       assert.equal(await loketh.eventsOf(secondAccount), numberOfEvents);
     });
   });
+
+  describe('ticketsOf', () => {
+    it('returns total number of tickets owned by given address', async () => {
+      // Add one, only to make sure zero never assigned.
+      const numberOfTickets = faker.random.number(4) + 1;
+
+      for (let i = 1; i <= numberOfTickets; i++) {
+        const startTime = dateToUnixEpochTimeInSeconds(faker.date.future());
+        const price = faker.random.number();
+
+        await loketh.createEvent(
+          faker.lorem.words(),
+          startTime,
+          startTime + faker.random.number(),
+          price,
+          faker.random.number(),
+          { from: firstAccount }
+        );
+
+        await loketh.buyTicket(i, { from: secondAccount, value: price });
+      }
+
+      assert.equal(await loketh.ticketsOf(firstAccount), 0);
+      assert.equal(await loketh.ticketsOf(secondAccount), numberOfTickets);
+    });
+  });
 });
 
 /// Test Utils ///
