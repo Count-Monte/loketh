@@ -84,12 +84,6 @@ contract('Loketh', accounts => {
   });
 
   describe('eventsOfOwner', () => {
-    it('reverts when given address is zero', async () => {
-      await expectRevert.unspecified(
-        loketh.eventsOfOwner('0x0000000000000000000000000000000000000000')
-      );
-    });
-
     it('returns a list of event IDs owned by given address', async () => {
       // Add one, only to make sure zero never assigned.
       const numberOfEvents = faker.random.number(4) + 1;
@@ -193,12 +187,6 @@ contract('Loketh', accounts => {
   });
 
   describe('eventsOf', () => {
-    it('reverts when given address is zero', async () => {
-      await expectRevert.unspecified(
-        loketh.eventsOf('0x0000000000000000000000000000000000000000')
-      );
-    });
-
     it('returns total number of events owned by given address', async () => {
       // Add one, only to make sure zero never assigned.
       const numberOfEvents = faker.random.number(4) + 1;

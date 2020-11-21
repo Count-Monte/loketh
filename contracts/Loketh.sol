@@ -101,7 +101,6 @@ contract Loketh is Context {
     }
 
     /// @notice Returns a list of all event IDs assigned to an address.
-    /// @dev Address zero is invalid.
     /// @param _address The event owner address.
     /// @return The event IDs.
     function eventsOfOwner(address _address)
@@ -163,12 +162,9 @@ contract Loketh is Context {
     }
 
     /// @notice Returns total number of events owned by given address.
-    /// @dev Address zero is invalid.
     /// @param _address The address to check.
     /// @return The total number of events.
     function eventsOf(address _address) public view returns (uint) {
-        require(_address != address(0));
-
         return _organizerToEventIdsOwned[_address].length();
     }
 
