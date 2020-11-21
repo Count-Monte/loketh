@@ -3,13 +3,11 @@ pragma solidity ^0.6.0;
 
 import "@openzeppelin/contracts/GSN/Context.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 
 /// @title The main contract of Loketh Event Ticketing Service.
 /// @author Roni Yusuf (https://rymanalu.github.io/)
 contract Loketh is Context {
-    using Counters for Counters.Counter;
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableSet for EnumerableSet.UintSet;
     using SafeMath for uint;
@@ -45,9 +43,6 @@ contract Loketh is Context {
 
     /// @dev A mapping of organizer to a set of event IDs that they owned.
     mapping(address => EnumerableSet.UintSet) private _organizerToEventIdsOwned;
-
-    /// @dev A mapping of event ID to its ticket sold counter.
-    mapping(uint => Counters.Counter) private _eventSoldCounter;
 
     /// @dev A mapping of event ID to its participants.
     mapping(uint => EnumerableSet.AddressSet) private _eventParticipants;
@@ -109,8 +104,8 @@ contract Loketh is Context {
             "Loketh: Participant already bought the ticket."
         );
 
-        uint soldCounter = _eventSoldCounter[_eventId].current();
-        require(soldCounter < e.quota, "Loketh: No quota left.");
+        uint participants = _eventParticipants[_eventId].length();
+        require(participants < e.quota, "Loketh: No quota left.");
 
         _moneyJar[_eventId] = _moneyJar[_eventId].add(msg.value);
 
@@ -200,7 +195,7 @@ contract Loketh is Context {
         )
     {
         Event memory e = _events[_id];
-        uint soldCounter = _eventSoldCounter[_id].current();
+        uint soldCounter = _eventParticipants[_id].length();
         uint moneyCollected = _moneyJar[_id];
 
         return (
@@ -235,8 +230,6 @@ contract Loketh is Context {
     /// @param _eventId The event ID.
     /// @param _participant The event participant.
     function _buyTicket(uint _eventId, address _participant) private {
-        _eventSoldCounter[_eventId].increment();
-
         _eventParticipants[_eventId].add(_participant);
 
         _participantToEventIdsOwned[_participant].add(_eventId);
