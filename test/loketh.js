@@ -24,18 +24,19 @@ contract('Loketh', accounts => {
     // Event ID created by `firstAccount`.
     const eventId = 1;
 
-    let price, quota;
+    let price, quota, endTime;
 
     beforeEach(async () => {
       price = faker.random.number();
       quota = faker.random.number();
 
       const startTime = latestTime + faker.random.number();
+      endTime = startTime + faker.random.number();
 
       await loketh.createEvent(
         faker.lorem.words(),
         startTime,
-        startTime + faker.random.number(),
+        endTime,
         price,
         quota,
         { from: firstAccount }
@@ -105,6 +106,15 @@ contract('Loketh', accounts => {
       await expectRevert(
         loketh.buyTicket(2, { from: otherAccount, value: price }),
         'Loketh: No quota left.'
+      );
+    });
+
+    it('reverts when participant buys a ticket from an event that already ended', async () => {
+      await time.increaseTo(endTime + faker.random.number());
+
+      await expectRevert(
+        loketh.buyTicket(eventId, { from: secondAccount, value: price }),
+        'Loketh: Can not buy ticket from an event that already ended.'
       );
     });
 

@@ -110,6 +110,10 @@ contract Loketh is Context {
             _eventParticipants[_eventId].length() < e.quota,
             "Loketh: No quota left."
         );
+        require(
+            block.timestamp < e.endTime,
+            "Loketh: Can not buy ticket from an event that already ended."
+        );
 
         _moneyJar[_eventId] = _moneyJar[_eventId].add(msg.value);
 
