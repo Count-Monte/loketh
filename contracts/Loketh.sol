@@ -73,6 +73,9 @@ contract Loketh is Context {
     /// @dev Emitted when someone buy a ticket.
     event TicketIssued(uint indexed eventId, address indexed participant);
 
+    /// @dev Emitted when organizer withdrawn money from the money jar.
+    event MoneyWithdrawn(uint indexed eventId, address indexed recipient, uint amount);
+
     /// @dev Initializes contract and create the event zero to its address.
     constructor() public {
         _createEvent(
@@ -229,6 +232,33 @@ contract Loketh is Context {
     /// @return Returns the total number of events, without the Genesis.
     function totalEvents() external view returns (uint) {
         return _events.length - 1;
+    }
+
+    /// @notice Let's withdraw the money from event ticket sale!
+    /// @param _eventId The event ID we are going to withdraw from.
+    function withdrawMoney(uint _eventId) external validEventId(_eventId) {
+        address payable sender = _msgSender();
+
+        Event memory e = _events[_eventId];
+
+        require(
+            sender == e.organizer,
+            "Loketh: Sender is not the event owner."
+        );
+        require(
+            block.timestamp > e.endTime,
+            "Loketh: Money only can be withdrawn after the event ends."
+        );
+
+        uint amount = _moneyJar[_eventId];
+
+        require(amount > 0, "Loketh: There are no money left to be transferred.");
+
+        _moneyJar[_eventId] = 0;
+
+        sender.transfer(amount);
+
+        emit MoneyWithdrawn(_eventId, sender, amount);
     }
 
     /// @notice Returns total number of events owned by given address.

@@ -1,18 +1,23 @@
 const faker = require('faker');
-const { BN, expectEvent, expectRevert } = require('@openzeppelin/test-helpers');
+const {
+  balance,
+  BN,
+  expectEvent,
+  expectRevert,
+  time
+} = require('@openzeppelin/test-helpers');
 
 const Loketh = artifacts.require('Loketh');
 
 contract('Loketh', accounts => {
   let loketh;
-  let firstAccount, secondAccount, otherAccount;
+  let latestTime;
 
-  before(() => {
-    [firstAccount, secondAccount, otherAccount] = accounts;
-  });
+  const [firstAccount, secondAccount, otherAccount] = accounts;
 
   beforeEach(async () => {
     loketh = await Loketh.new({ from: firstAccount });
+    latestTime = (await time.latest()).toNumber();
   });
 
   describe('buyTicket', () => {
@@ -25,7 +30,7 @@ contract('Loketh', accounts => {
       price = faker.random.number();
       quota = faker.random.number();
 
-      const startTime = dateToUnixEpochTimeInSeconds(faker.date.future());
+      const startTime = latestTime + faker.random.number();
 
       await loketh.createEvent(
         faker.lorem.words(),
@@ -80,7 +85,7 @@ contract('Loketh', accounts => {
     });
 
     it('reverts when no quota left', async () => {
-      const startTime = dateToUnixEpochTimeInSeconds(faker.date.future());
+      const startTime = latestTime + faker.random.number();
 
       // Create a new event with only one quota...
       // Event ID: 2
@@ -168,7 +173,7 @@ contract('Loketh', accounts => {
     let futureStartTime;
 
     beforeEach(() => {
-      futureStartTime = dateToUnixEpochTimeInSeconds(faker.date.future());
+      futureStartTime = latestTime + faker.random.number();
     });
 
     it('reverts when `_quota` less than one', async () => {
@@ -186,7 +191,7 @@ contract('Loketh', accounts => {
     });
 
     it('reverts when `_startTime` less than `block.timestamp`', async () => {
-      const startTime = dateToUnixEpochTimeInSeconds(faker.date.past());
+      const startTime = latestTime - faker.random.number();
 
       await expectRevert(
         loketh.createEvent(
@@ -265,7 +270,7 @@ contract('Loketh', accounts => {
       for (let i = 0; i < numberOfEvents; i++) {
         const assignToSecondAccount = faker.random.boolean();
         const from = assignToSecondAccount ? secondAccount : firstAccount;
-        const startTime = dateToUnixEpochTimeInSeconds(faker.date.future());
+        const startTime = latestTime + faker.random.number();
 
         await loketh.createEvent(
           faker.lorem.words(),
@@ -300,7 +305,7 @@ contract('Loketh', accounts => {
       const numberOfEvents = faker.random.number(4) + 1;
 
       for (let i = 0; i < numberOfEvents; i++) {
-        const startTime = dateToUnixEpochTimeInSeconds(faker.date.future());
+        const startTime = latestTime + faker.random.number();
 
         await loketh.createEvent(
           faker.lorem.words(),
@@ -319,7 +324,7 @@ contract('Loketh', accounts => {
     });
 
     it('returns event information by given id', async () => {
-      const startTime = dateToUnixEpochTimeInSeconds(faker.date.future());
+      const startTime = latestTime + faker.random.number();
 
       // First event...
       const firstEventName = faker.lorem.words();
@@ -372,7 +377,7 @@ contract('Loketh', accounts => {
 
       for (let i = 1; i <= numberOfTickets; i++) {
         const assignToSecondAccount = faker.random.boolean();
-        const startTime = dateToUnixEpochTimeInSeconds(faker.date.future());
+        const startTime = latestTime + faker.random.number();
         const price = faker.random.number();
 
         await loketh.createEvent(
@@ -409,7 +414,7 @@ contract('Loketh', accounts => {
     });
 
     it('increments when a new event created', async () => {
-      const startTime = dateToUnixEpochTimeInSeconds(faker.date.future());
+      const startTime = latestTime + faker.random.number();
 
       assert.equal(await loketh.totalEvents(), 0);
 
@@ -425,13 +430,124 @@ contract('Loketh', accounts => {
     });
   });
 
+  describe('withdrawMoney', () => {
+    // Event ID created by `firstAccount`.
+    const eventId = 1;
+
+    let price, endTime;
+
+    beforeEach(async () => {
+      price = web3.utils.toWei('1', 'ether');
+
+      const startTime = latestTime + faker.random.number();
+      endTime = startTime + faker.random.number();
+
+      await loketh.createEvent(
+        faker.lorem.words(),
+        startTime,
+        endTime,
+        price,
+        faker.random.number(),
+        { from: firstAccount }
+      );
+    });
+
+    it('reverts when given event ID is less than one', async () => {
+      await expectRevert(
+        loketh.withdrawMoney(0, { from: firstAccount }),
+        'Loketh: event ID must be at least one.'
+      );
+    });
+
+    it('reverts when given event ID is greater than events length', async () => {
+      await expectRevert(
+        loketh.withdrawMoney(eventId + 1, { from: firstAccount }),
+        'Loketh: event ID must be lower than `_events` length.'
+      );
+    });
+
+    it('reverts when sender is not the event owner', async () => {
+      await expectRevert(
+        loketh.withdrawMoney(eventId, { from: secondAccount }),
+        'Loketh: Sender is not the event owner.'
+      );
+    });
+
+    it('reverts when sender withdraw money before the event ends', async () => {
+      await expectRevert(
+        loketh.withdrawMoney(eventId, { from: firstAccount }),
+        'Loketh: Money only can be withdrawn after the event ends.'
+      );
+    });
+
+    it('reverts when there are no money left in the jar', async () => {
+      await time.increaseTo(endTime + faker.random.number());
+
+      await expectRevert(
+        loketh.withdrawMoney(eventId, { from: firstAccount }),
+        'Loketh: There are no money left to be transferred.'
+      );
+    });
+
+    it('resets the money jar when withdrawing', async () => {
+      await loketh.buyTicket(eventId, { from: secondAccount, value: price });
+      await loketh.buyTicket(eventId, { from: otherAccount, value: price });
+
+      let event = await loketh.getEvent(eventId);
+
+      const prevMoneyCollected = event['7'];
+
+      assert.equal(prevMoneyCollected, (price * 2));
+
+      await time.increaseTo(endTime + faker.random.number());
+
+      await loketh.withdrawMoney(eventId, { from: firstAccount });
+
+      event = await loketh.getEvent(eventId);
+
+      assert.equal(event['7'], 0);
+      assert.notEqual(event['7'], prevMoneyCollected);
+    });
+
+    it('transfers money to the event owner', async () => {
+      const prevBalance = await balance.current(firstAccount);
+
+      await loketh.buyTicket(eventId, { from: secondAccount, value: price });
+      await loketh.buyTicket(eventId, { from: otherAccount, value: price });
+
+      await time.increaseTo(endTime + faker.random.number());
+
+      await loketh.withdrawMoney(eventId, { from: firstAccount });
+
+      const currentBalance = await balance.current(firstAccount);
+
+      assert.isTrue(currentBalance.gt(prevBalance));
+      assert.isNotTrue(currentBalance.eq(prevBalance));
+    });
+
+    it('emits `MoneyWithdrawn` after successfully withdrawn', async () => {
+      await loketh.buyTicket(eventId, { from: secondAccount, value: price });
+      await loketh.buyTicket(eventId, { from: otherAccount, value: price });
+
+      await time.increaseTo(endTime + faker.random.number());
+
+      const receipt = await loketh.withdrawMoney(eventId, { from: firstAccount });
+
+      await expectEvent(receipt, 'MoneyWithdrawn', {
+        eventId: new BN(eventId),
+        recipient: firstAccount,
+        amount: (new BN(price)).mul(new BN(2))
+      });
+    })
+  });
+
   describe('eventsOf', () => {
     it('returns total number of events owned by given address', async () => {
       // Add one, only to make sure zero never assigned.
       const numberOfEvents = faker.random.number(4) + 1;
 
       for (let i = 0; i < numberOfEvents; i++) {
-        const startTime = dateToUnixEpochTimeInSeconds(faker.date.future());
+        const startTime = latestTime + faker.random.number();
 
         await loketh.createEvent(
           faker.lorem.words(),
@@ -454,7 +570,7 @@ contract('Loketh', accounts => {
       const numberOfTickets = faker.random.number(4) + 1;
 
       for (let i = 1; i <= numberOfTickets; i++) {
-        const startTime = dateToUnixEpochTimeInSeconds(faker.date.future());
+        const startTime = latestTime + faker.random.number();
         const price = faker.random.number();
 
         await loketh.createEvent(
@@ -474,9 +590,3 @@ contract('Loketh', accounts => {
     });
   });
 });
-
-/// Test Utils ///
-
-function dateToUnixEpochTimeInSeconds(date) {
-  return parseInt(date.getTime() / 1000);
-}
