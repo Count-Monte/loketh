@@ -1,6 +1,6 @@
 import React, { Component, Fragment } from 'react';
 import classNames from 'classnames';
-import { Card, Col, Row, Spinner } from 'react-bootstrap';
+import { Card, Col, Pagination, Row, Spinner } from 'react-bootstrap';
 import { FaCalendarAlt, FaMoneyBillAlt, FaUserCircle } from 'react-icons/fa';
 
 import { IconWithText } from '../components';
@@ -16,7 +16,9 @@ class Events extends Component {
     events: [],
     loaded: false,
     page: 1,
-    perPage: 10,
+    paginationHasPrev: false,
+    paginationHasNext: false,
+    perPage: 12,
     totalEvents: 0
   };
 
@@ -46,9 +48,17 @@ class Events extends Component {
       });
 
       this.setState({ totalEvents }, async () => {
+        const { page, perPage, totalEvents } = this.state;
+
+        const maxId = totalEvents - ((page - 1) * perPage);
+        const minId = ((maxId - perPage) < 0) ? 0 : (maxId - perPage);
+
+        const paginationHasPrev = maxId < totalEvents;
+        const paginationHasNext = minId > 0;
+
         const events = [];
 
-        for (let i = totalEvents; i > 0; i--) {
+        for (let i = maxId; i > minId; i--) {
           const event = await loketh.methods.getEvent(i).call({
             from: accounts[0]
           });
@@ -66,7 +76,12 @@ class Events extends Component {
           });
         }
 
-        this.setState({ events: arrayChunk(events, 3), loaded: true });
+        this.setState({
+          events: arrayChunk(events, 3),
+          loaded: true,
+          paginationHasPrev,
+          paginationHasNext
+        });
       });
     } catch (error) {
       alert('Failed to load events. Check console for details.');
@@ -76,7 +91,18 @@ class Events extends Component {
   };
 
   render() {
-    const { events, loaded } = this.state;
+    const {
+      events,
+      loaded,
+      page,
+      paginationHasPrev,
+      paginationHasNext,
+      perPage,
+      totalEvents
+    } = this.state;
+
+    const fromData = ((page - 1) * perPage) + 1;
+    const toData = paginationHasNext ? page * perPage : totalEvents;
 
     return (
       <Fragment>
@@ -146,10 +172,39 @@ class Events extends Component {
                 </Row>
               );
             })) : (
-              <p>There are no upcoming events at this time.</p>
+              <p className="text-center">
+                There are no upcoming events at this time.
+              </p>
             )
           ) : (
-            <Spinner animation="border" />
+            <div className="d-flex justify-content-center">
+              <Spinner animation="border" />
+            </div>
+          )
+        }
+        {
+          events.length > 0 && (
+            <Fragment>
+              <Pagination className="d-flex justify-content-center mt-4">
+                {
+                  paginationHasPrev && (
+                    <Pagination.Prev onClick={() => {
+                      this.getEvents(page - 1);
+                    }} />
+                  )
+                }
+                {
+                  paginationHasNext && (
+                    <Pagination.Next onClick={() => {
+                      this.getEvents(page + 1);
+                    }} />
+                  )
+                }
+              </Pagination>
+              <p className="text-center">
+                Showing {fromData} to {toData} of {totalEvents} events
+              </p>
+            </Fragment>
           )
         }
       </Fragment>
