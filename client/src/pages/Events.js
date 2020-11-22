@@ -7,8 +7,8 @@ import { IconWithText } from '../components';
 import {
   arrayChunk,
   epochToEventDate,
-   getShortAddress,
-   strLimit
+  getShortAddress,
+  strLimit
 } from '../utils';
 
 class Events extends Component {
