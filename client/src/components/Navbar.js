@@ -5,12 +5,49 @@ import { Link } from 'react-router-dom';
 import { getShortAddress } from '../utils';
 
 class Navbar extends Component {
-  render() {
-    let account = '';
+  state = { account: '', balance: 0, loaded: false };
 
-    if (this.props.accounts.length > 0) {
-      account = this.props.accounts[0];
+  componentDidMount = async () => {
+    if (this.props.initialized) {
+      await this.getAccount();
     }
+  };
+
+  componentDidUpdate = async (prevProps) => {
+    if (
+      this.props.initialized &&
+      this.props.initialized !== prevProps.initialized
+    ) {
+      await this.getAccount();
+    }
+  };
+
+  getAccount = async () => {
+    try {
+      this.setState({ loaded: false });
+
+      const { accounts, web3 } = this.props;
+
+      const [account] = accounts;
+
+      const balance = web3.utils.fromWei(
+        await web3.eth.getBalance(account), 'ether'
+      );
+
+      this.setState({
+        account: getShortAddress(account),
+        balance: parseFloat(balance).toFixed(4),
+        loaded: true
+      });
+    } catch (error) {
+      alert('Failed to load account. Check console for details.');
+
+      console.error(error);
+    }
+  };
+
+  render() {
+    const { account, balance, loaded } = this.state;
 
     return (
       <RBNavbar bg="dark" expand="md" sticky="top" variant="dark">
@@ -30,12 +67,9 @@ class Navbar extends Component {
               </Nav.Link>
             </Nav>
             {
-              account.length > 0 ? (
+              loaded ? (
                 <RBNavbar.Text>
-                  {'Signed in as: '}
-                  <strong>
-                    {getShortAddress(account)}
-                  </strong>
+                  Signed in as: <strong>{account} ({balance} ETH)</strong>
                 </RBNavbar.Text>
               ) : (
                 <Spinner animation="grow" variant="light" />

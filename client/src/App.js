@@ -49,7 +49,7 @@ class App extends Component {
 
     return (
       <Router>
-        <Navbar accounts={accounts} />
+        <Navbar accounts={accounts} initialized={initialized} web3={web3} />
         <Container as="main">
           <Switch>
             <Route path="/about">

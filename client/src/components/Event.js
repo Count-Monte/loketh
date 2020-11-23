@@ -16,7 +16,7 @@ class Event extends Component {
     const date = startTime === endTime
       ? startTime
       : `${startTime} - ${endTime}`;
-    const price = web3.utils.fromWei(event['4'], 'ether');
+    const price = parseFloat(web3.utils.fromWei(event['4'], 'ether')).toFixed(4);
 
     return (
       <Card>
