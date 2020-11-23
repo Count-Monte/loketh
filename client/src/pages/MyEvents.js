@@ -100,7 +100,7 @@ class MyEvents extends Component {
                 })}
               </CardColumns>
             ) : (
-              <p>There are no upcoming events at this time.</p>
+              <p>You have no events at this time.</p>
             )
           ) : (
             <Spinner animation="border" />
