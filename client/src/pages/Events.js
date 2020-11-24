@@ -2,8 +2,8 @@ import React, { Component, Fragment } from 'react';
 import classNames from 'classnames';
 import { Col, Row, Spinner } from 'react-bootstrap';
 
-import { Event, Pagination } from '../components'
-import { arrayChunk } from '../utils';
+import { BuyTicketForm, Event, Pagination } from '../components'
+import { arrayChunk, toEvent } from '../utils';
 
 const CHUNK = 3;
 
@@ -15,6 +15,8 @@ class Events extends Component {
     paginationHasPrev: false,
     paginationHasNext: false,
     perPage: 12,
+    selectedEvent: null,
+    showBuyTicket: false,
     totalEvents: 0
   };
 
@@ -59,7 +61,7 @@ class Events extends Component {
             from: accounts[0]
           });
 
-          events.push(event);
+          events.push(toEvent(event, i));
         }
 
         this.setState({
@@ -84,8 +86,11 @@ class Events extends Component {
       paginationHasPrev,
       paginationHasNext,
       perPage,
+      selectedEvent,
+      showBuyTicket,
       totalEvents
     } = this.state;
+    const { accounts, loketh } = this.props;
 
     const fromData = ((page - 1) * perPage) + 1;
     const toData = paginationHasNext ? page * perPage : totalEvents;
@@ -109,7 +114,15 @@ class Events extends Component {
                 <Row className={rowClassName} key={i}>
                   {chunk.map((event, j) => (
                     <Col key={j}>
-                      <Event event={event} web3={this.props.web3} />
+                      <Event
+                        event={event}
+                        onClickTitle={() => {
+                          this.setState({
+                            selectedEvent: event,
+                            showBuyTicket: true
+                          });
+                        }}
+                      />
                     </Col>
                   ))}
                   {filler}
@@ -140,6 +153,19 @@ class Events extends Component {
               }}
               to={toData}
               total={totalEvents}
+            />
+          )
+        }
+        {
+          loaded && (
+            <BuyTicketForm
+              accounts={accounts}
+              event={selectedEvent}
+              loketh={loketh}
+              onHide={() => {
+                this.setState({ showBuyTicket: false });
+              }}
+              show={showBuyTicket}
             />
           )
         }

@@ -3,38 +3,44 @@ import { Card } from 'react-bootstrap';
 import { FaCalendarAlt, FaMoneyBillAlt, FaUserCircle } from 'react-icons/fa';
 
 import IconWithText from './IconWithText';
-import { epochToEventDate, getShortAddress, strLimit } from '../utils';
 
 class Event extends Component {
   render() {
-    const { event, web3 } = this.props;
-
-    const name = strLimit(event['0'], 30);
-    const organizer = getShortAddress(event['1']);
-    const startTime = epochToEventDate(event['2']);
-    const endTime = epochToEventDate(event['3']);
-    const date = startTime === endTime
-      ? startTime
-      : `${startTime} - ${endTime}`;
-    const price = parseFloat(web3.utils.fromWei(event['4'], 'ether')).toFixed(4);
+    const {
+      event,
+      onClickTitle = () => {}
+    } = this.props;
 
     return (
       <Card>
         <Card.Body>
           <Card.Title>
-            <Card.Link>{name}</Card.Link>
+            <Card.Link
+              href="#"
+              onClick={e => {
+                e.preventDefault();
+
+                onClickTitle(event.id);
+              }}
+            >
+              {event.shortName}
+            </Card.Link>
           </Card.Title>
           <Card.Text>
-            <IconWithText icon={FaCalendarAlt}>{date}</IconWithText>
+            <IconWithText icon={FaCalendarAlt}>
+              {event.displayDate}
+            </IconWithText>
           </Card.Text>
           <Card.Text>
-            <IconWithText icon={FaMoneyBillAlt}>{price} ETH</IconWithText>
+            <IconWithText icon={FaMoneyBillAlt}>
+              {event.priceInEth} ETH
+            </IconWithText>
           </Card.Text>
         </Card.Body>
         <Card.Footer>
           <Card.Text>
             <IconWithText icon={FaUserCircle}>
-              <Card.Text>{organizer}</Card.Text>
+              <Card.Text>{event.shortOrganizer}</Card.Text>
             </IconWithText>
           </Card.Text>
         </Card.Footer>

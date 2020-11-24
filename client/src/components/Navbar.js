@@ -10,6 +10,8 @@ class Navbar extends Component {
   componentDidMount = async () => {
     if (this.props.initialized) {
       await this.getAccount();
+
+      this.listenToTicketIssued();
     }
   };
 
@@ -19,7 +21,19 @@ class Navbar extends Component {
       this.props.initialized !== prevProps.initialized
     ) {
       await this.getAccount();
+
+      this.listenToTicketIssued();
     }
+  };
+
+  listenToTicketIssued = () => {
+    console.log('listenToTicketIssued');
+    const { accounts, loketh } = this.props;
+
+    loketh.events.TicketIssued({ participant: accounts[0] }).on('data', () => {
+      console.log('TicketIssued');
+      this.getAccount();
+    });
   };
 
   getAccount = async () => {
