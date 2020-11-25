@@ -15,7 +15,9 @@ class BuyTicketForm extends Component {
     event: null,
     isBuying: false,
     isPaymentSucceed: false,
-    loaded: false
+    loaded: false,
+    userAlreadyHasTheTicket: false,
+    userIsTheOwner: false
   };
 
   componentDidMount = async () => {
@@ -41,12 +43,31 @@ class BuyTicketForm extends Component {
 
       const { accounts, event: e, loketh } = this.props;
 
+      const [account] = accounts;
+
       if (e) {
         const event = await loketh.methods.getEvent(e.id).call({
-          from: accounts[0]
+          from: account
         });
 
-        this.setState({ event: toEvent(event, e.id), loaded: true });
+        const userAlreadyHasTheTicket = (
+          await loketh.methods.participantHasTicket(account, e.id).call({
+            from: account
+          })
+        );
+
+        const userIsTheOwner = (
+          await loketh.methods.organizerOwnsEvent(account, e.id).call({
+            from: account
+          })
+        );
+
+        this.setState({
+          event: toEvent(event, e.id),
+          loaded: true,
+          userAlreadyHasTheTicket,
+          userIsTheOwner
+        });
       }
     } catch (error) {
       handleError(error);
@@ -60,7 +81,34 @@ class BuyTicketForm extends Component {
       onHide = () => {},
       show = false
     } = this.props;
-    const { event, isBuying, isPaymentSucceed, loaded } = this.state;
+
+    const {
+      event,
+      isBuying,
+      isPaymentSucceed,
+      loaded,
+      userAlreadyHasTheTicket,
+      userIsTheOwner
+    } = this.state;
+
+    let submitButtonChildren = null;
+    const spinner = (<Spinner animation="border" />);
+
+    if (isBuying) {
+      submitButtonChildren = isPaymentSucceed
+        ? 'Payment succeed! See your tickets in My Tickets page.'
+        : spinner;
+    } else {
+      if (userAlreadyHasTheTicket) {
+        submitButtonChildren = (
+          'You are already buy this ticket. Check out My Tickets page.'
+        );
+      } else if (userIsTheOwner) {
+        submitButtonChildren = 'Can not buy your own event ticket!';
+      } else {
+        submitButtonChildren = 'Buy Ticket';
+      }
+    }
 
     return (
       <Modal
@@ -97,6 +145,8 @@ class BuyTicketForm extends Component {
                   });
 
                   this.setState({ isBuying: true, isPaymentSucceed: true });
+
+                  await this.getEvent();
                 } catch (error) {
                   handleError(error);
 
@@ -160,20 +210,16 @@ class BuyTicketForm extends Component {
                   variant="primary"
                   type="submit"
                   block
-                  disabled={isBuying}
+                  disabled={(
+                    isBuying || userAlreadyHasTheTicket || userIsTheOwner
+                  )}
                 >
-                  {
-                    isBuying ? (
-                      isPaymentSucceed ? (
-                        'Payment succeed! See your tickets in My Tickets page.'
-                      ) : (<Spinner animation="border" />)
-                    ) : 'Buy Ticket'
-                  }
+                  {submitButtonChildren}
                 </Button>
               </Form>
             ) : (
               <div className="d-flex justify-content-center">
-                <Spinner animation="border" />
+                {spinner}
               </div>
             )
           }

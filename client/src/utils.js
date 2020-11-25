@@ -60,7 +60,7 @@ class ErrorHandler {
   }
 
   get message() {
-    return this._error ? this._error.message : this.error.message;
+    return this._error ? this._error.message : 'Something went wrong.';
   }
 }
 
