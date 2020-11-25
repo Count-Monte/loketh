@@ -375,6 +375,62 @@ contract('Loketh', accounts => {
     });
   });
 
+  describe('participantHasTicket', () => {
+    // Event ID created by `firstAccount`.
+    const eventId = 1;
+
+    let price;
+
+    beforeEach(async () => {
+      price = faker.random.number();
+
+      const startTime = latestTime + faker.random.number();
+
+      await loketh.createEvent(
+        faker.lorem.words(),
+        startTime,
+        startTime + faker.random.number(),
+        price,
+        faker.random.number(),
+        { from: firstAccount }
+      );
+    });
+
+    it('reverts when given event ID is less than one', async () => {
+      await expectRevert(
+        loketh.participantHasTicket(secondAccount, 0, { from: secondAccount }),
+        'Loketh: event ID must be at least one.'
+      );
+    });
+
+    it('reverts when given event ID is greater than events length', async () => {
+      await expectRevert(
+        loketh.participantHasTicket(
+          secondAccount, eventId + 1, { from: secondAccount }
+        ),
+        'Loketh: event ID must be lower than `_events` length.'
+      );
+    });
+
+    it('returns `false` if participant did not have the ticket', async () => {
+      const result = await loketh.participantHasTicket(
+        secondAccount, eventId, { from: secondAccount }
+      );
+
+      assert.isNotTrue(result);
+    });
+
+    it('returns `false` if participant did have the ticket', async () => {
+      await loketh.buyTicket(eventId, { from: secondAccount, value: price });
+
+      const result = await loketh.participantHasTicket(
+        secondAccount, eventId, { from: secondAccount }
+      );
+
+      assert.isTrue(result);
+    });
+  });
+
   describe('ticketsOfOwner', () => {
     it('returns an empty array if given address has zero tickets', async () => {
       assert.deepEqual(await loketh.ticketsOfOwner(otherAccount), []);

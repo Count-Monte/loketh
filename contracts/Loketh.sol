@@ -213,6 +213,18 @@ contract Loketh is Context {
         );
     }
 
+    /// @dev Checking if given participant is already has given ticket.
+    /// @param _participant The address to check.
+    /// @param _eventId The ticket ID to check.
+    function participantHasTicket(address _participant, uint _eventId)
+        external
+        view
+        validEventId(_eventId)
+        returns (bool)
+    {
+        return _participantToEventIdsOwned[_participant].contains(_eventId);
+    }
+
     /// @notice Returns a list of all ticket (event) IDs assigned to an address.
     /// @param _address The ticket owner address.
     /// @return The ticket (event) IDs.
