@@ -1,6 +1,69 @@
 import { unix as epoch } from 'moment';
 import Web3 from 'web3';
 
+const ERRORS = {
+  'You have no Metamask installed': {
+    displayError: true,
+    log: false,
+    message: 'You have no Metamask installed.'
+  },
+  'You are connected to the wrong network': {
+    displayError: true,
+    log: false,
+    message: 'You are connected to the wrong network.'
+  },
+  'User rejected the request': {
+    displayError: true,
+    log: false,
+    message: 'You rejected the connect request.'
+  },
+  'User denied transaction signature': {
+    displayError: false,
+    log: false,
+    message: 'MetaMask Tx Signature: User denied transaction signature.'
+  },
+  'Loketh: Organizer can not buy their own event': {
+    displayError: true,
+    log: false,
+    message: 'You can not buy a ticket from your own event.'
+  },
+  'Loketh: Participant already bought the ticket': {
+    displayError: true,
+    log: false,
+    message: 'You are already buy this ticket.'
+  }
+};
+
+class ErrorHandler {
+  constructor(error) {
+    if (error instanceof Error) {
+      this.error = error;
+    } else if ((typeof error === 'object') && error.message) {
+      this.error = new Error(error.message);
+    } else {
+      this.error = new Error(error);
+    }
+
+    const key = Object.keys(ERRORS).find(err => {
+      return this.error.message.includes(err);
+    })
+
+    this._error = key ? ERRORS[key] : null;
+  }
+
+  get displayError() {
+    return this._error ? this._error.displayError : true;
+  }
+
+  get log() {
+    return this._error ? this._error.log : true;
+  }
+
+  get message() {
+    return this._error ? this._error.message : this.error.message;
+  }
+}
+
 class Event {
   constructor(event, id) {
     this.event = event;
@@ -97,8 +160,24 @@ export function getShortAddress(address) {
   return `${address.substr(0, 6)}...${address.substr(-4)}`;
 }
 
+export function handleError(error) {
+  const errorHandler = toErrorHandler(error);
+
+  if (errorHandler.displayError) {
+    alert(errorHandler.message);
+  }
+
+  if (errorHandler.log) {
+    console.error(error);
+  }
+}
+
 export function toEvent(event, id = 0) {
   return new Event(event, id);
+}
+
+export function toErrorHandler(error) {
+  return new ErrorHandler(error);
 }
 
 export function strLimit(str, limit = 20) {

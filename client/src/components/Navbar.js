@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import { Container, Nav, Navbar as RBNavbar, Spinner } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 
-import { getShortAddress } from '../utils';
+import { getShortAddress, handleError } from '../utils';
 
 class Navbar extends Component {
   state = { account: '', balance: 0, loaded: false };
@@ -54,9 +54,7 @@ class Navbar extends Component {
         loaded: true
       });
     } catch (error) {
-      alert('Failed to load account. Check console for details.');
-
-      console.error(error);
+      handleError(error);
     }
   };
 

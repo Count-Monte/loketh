@@ -3,7 +3,7 @@ import { CardColumns, Card, Spinner } from 'react-bootstrap';
 import { FaCalendarAlt, FaMoneyBillAlt } from 'react-icons/fa';
 
 import { IconWithText } from '../components';
-import { epochToEventDate, strLimit } from '../utils';
+import { epochToEventDate, handleError, strLimit } from '../utils';
 
 class MyEvents extends Component {
   state = { events: [], loaded: false };
@@ -57,9 +57,7 @@ class MyEvents extends Component {
 
       this.setState({ events, loaded: true });
     } catch (error) {
-      alert('Failed to load events. Check console for details.');
-
-      console.error(error);
+      handleError(error);
     }
   };
 

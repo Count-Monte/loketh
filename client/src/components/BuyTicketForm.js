@@ -8,7 +8,7 @@ import {
   FaUserFriends
 } from 'react-icons/fa';
 
-import { toEvent } from '../utils';
+import { handleError, toEvent } from '../utils';
 
 class BuyTicketForm extends Component {
   state = {
@@ -49,9 +49,7 @@ class BuyTicketForm extends Component {
         this.setState({ event: toEvent(event, e.id), loaded: true });
       }
     } catch (error) {
-      alert('Failed to load event. Check console for details.');
-
-      console.error(error);
+      handleError(error);
     }
   };
 
@@ -100,9 +98,7 @@ class BuyTicketForm extends Component {
 
                   this.setState({ isBuying: true, isPaymentSucceed: true });
                 } catch (error) {
-                  alert('Failed to buy ticket. Check console for details.');
-
-                  console.error(error);
+                  handleError(error);
 
                   this.setState({ isBuying: false, isPaymentSucceed: false });
                 }

@@ -3,7 +3,7 @@ import classNames from 'classnames';
 import { Col, Row, Spinner } from 'react-bootstrap';
 
 import { BuyTicketForm, Event, Pagination } from '../components'
-import { arrayChunk, toEvent } from '../utils';
+import { arrayChunk, handleError, toEvent } from '../utils';
 
 const CHUNK = 3;
 
@@ -72,9 +72,7 @@ class Events extends Component {
         });
       });
     } catch (error) {
-      alert('Failed to load events. Check console for details.');
-
-      console.error(error);
+      handleError(error);
     }
   };
 

@@ -6,8 +6,9 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 
 import { Footer, Navbar } from './components';
 import LokethContract from './contracts/Loketh.json';
-import { About, Events, MyEvents } from './pages';
 import getWeb3 from './getWeb3';
+import { About, Events, MyEvents } from './pages';
+import { handleError } from './utils';
 
 import './App.css';
 
@@ -28,6 +29,11 @@ class App extends Component {
       const accounts = await web3.eth.getAccounts();
       const networkId = await web3.eth.net.getId();
 
+      // eslint-disable-next-line
+      if (networkId != process.env.REACT_APP_NETWORK_ID) {
+        throw new Error('You are connected to the wrong network.');
+      }
+
       const deployedNetwork = LokethContract.networks[networkId];
       const instance = new web3.eth.Contract(
         LokethContract.abi,
@@ -37,10 +43,7 @@ class App extends Component {
       this.setState({ accounts, initialized: true, loketh: instance, web3 });
     } catch (error) {
       // Catch any errors for any of the above operations.
-      alert(
-        'Failed to load web3, accounts, or contract. Check console for details.',
-      );
-      console.error(error);
+      handleError(error);
     }
   };
 
