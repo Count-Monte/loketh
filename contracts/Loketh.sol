@@ -213,6 +213,18 @@ contract Loketh is Context {
         );
     }
 
+    /// @dev Checking if given organizer owns the given ticket.
+    /// @param _organizer The address to check.
+    /// @param _eventId The event ID to check.
+    function organizerOwnsEvent(address _organizer, uint _eventId)
+        external
+        view
+        validEventId(_eventId)
+        returns (bool)
+    {
+        return _organizerToEventIdsOwned[_organizer].contains(_eventId);
+    }
+
     /// @dev Checking if given participant is already has given ticket.
     /// @param _participant The address to check.
     /// @param _eventId The ticket ID to check.
