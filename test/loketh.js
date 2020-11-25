@@ -420,7 +420,7 @@ contract('Loketh', accounts => {
       assert.isNotTrue(result);
     });
 
-    it('returns `false` if participant did have the ticket', async () => {
+    it('returns `true` if participant did have the ticket', async () => {
       await loketh.buyTicket(eventId, { from: secondAccount, value: price });
 
       const result = await loketh.participantHasTicket(
