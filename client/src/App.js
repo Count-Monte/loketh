@@ -35,9 +35,14 @@ class App extends Component {
       }
 
       const deployedNetwork = LokethContract.networks[networkId];
+
+      if (!deployedNetwork) {
+        throw new Error('Loketh contract has not deployed.');
+      }
+
       const instance = new web3.eth.Contract(
         LokethContract.abi,
-        deployedNetwork && deployedNetwork.address,
+        deployedNetwork.address,
       );
 
       this.setState({ accounts, initialized: true, loketh: instance, web3 });
