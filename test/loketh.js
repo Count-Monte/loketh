@@ -135,6 +135,22 @@ contract('Loketh', accounts => {
       assert.notEqual(event['7'], prevMoneyCollected);
     });
 
+    it('adds the money from participants to contract\'s balance', async () => {
+      const prevBalance = await balance.current(loketh.address);
+
+      assert.isTrue(prevBalance.eq(new BN(0)));
+
+      await loketh.buyTicket(
+        eventId, { from: secondAccount, value: price }
+      );
+
+      const newBalance = await balance.current(loketh.address);
+
+      assert.isNotTrue(newBalance.eq(new BN(0)));
+      assert.isTrue(newBalance.gt(prevBalance));
+      assert.isTrue(newBalance.eq(new BN(price)));
+    });
+
     it('increments the sold counter when participant buy a ticket', async () => {
       let event = await loketh.getEvent(eventId);
 
@@ -641,6 +657,25 @@ contract('Loketh', accounts => {
       assert.isNotTrue(currentBalance.eq(prevBalance));
     });
 
+    it('subtracts the money from contract\'s balance to event owner', async () => {
+      await loketh.buyTicket(eventId, { from: secondAccount, value: price });
+      await loketh.buyTicket(eventId, { from: otherAccount, value: price });
+
+      const prevBalance = await balance.current(loketh.address);
+
+      assert.isTrue(prevBalance.eq(new BN(web3.utils.toWei('2', 'ether'))));
+
+      await time.increaseTo(endTime + faker.random.number());
+
+      await loketh.withdrawMoney(eventId, { from: firstAccount });
+
+      const newBalance = await balance.current(loketh.address);
+
+      assert.isNotTrue(newBalance.eq(new BN(web3.utils.toWei('2', 'ether'))));
+      assert.isTrue(newBalance.lt(prevBalance));
+      assert.isTrue(newBalance.eq(new BN(0)));
+    });
+
     it('emits `MoneyWithdrawn` after successfully withdrawn', async () => {
       await loketh.buyTicket(eventId, { from: secondAccount, value: price });
       await loketh.buyTicket(eventId, { from: otherAccount, value: price });
@@ -654,7 +689,7 @@ contract('Loketh', accounts => {
         recipient: firstAccount,
         amount: (new BN(price)).mul(new BN(2))
       });
-    })
+    });
   });
 
   describe('eventsOf', () => {
