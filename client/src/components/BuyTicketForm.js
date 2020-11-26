@@ -103,8 +103,6 @@ class BuyTicketForm extends Component {
         submitButtonChildren = (
           'You are already buy this ticket. Check out My Tickets page.'
         );
-      } else if (userIsTheOwner) {
-        submitButtonChildren = 'Can not buy your own event ticket!';
       } else {
         submitButtonChildren = 'Buy Ticket';
       }
@@ -206,16 +204,20 @@ class BuyTicketForm extends Component {
                     />
                   </InputGroup>
                 </Form.Group>
-                <Button
-                  variant="primary"
-                  type="submit"
-                  block
-                  disabled={(
-                    isBuying || userAlreadyHasTheTicket || userIsTheOwner
-                  )}
-                >
-                  {submitButtonChildren}
-                </Button>
+                {
+                  !userIsTheOwner && (
+                    <Button
+                      variant="primary"
+                      type="submit"
+                      block
+                      disabled={(
+                        isBuying || userAlreadyHasTheTicket || userIsTheOwner
+                      )}
+                    >
+                      {submitButtonChildren}
+                    </Button>
+                  )
+                }
               </Form>
             ) : (
               <div className="d-flex justify-content-center">
