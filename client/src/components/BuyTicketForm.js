@@ -3,7 +3,7 @@ import { Button, Form, InputGroup, Modal, Spinner } from 'react-bootstrap';
 import {
   FaCalendar,
   FaCalendarAlt,
-  FaMoneyBillAlt,
+  FaEthereum,
   FaUserCircle,
   FaUserFriends
 } from 'react-icons/fa';
@@ -183,7 +183,7 @@ class BuyTicketForm extends Component {
                 <Form.Group>
                   <InputGroup>
                     <InputGroup.Prepend>
-                      <InputGroup.Text><FaMoneyBillAlt /></InputGroup.Text>
+                      <InputGroup.Text><FaEthereum /></InputGroup.Text>
                     </InputGroup.Prepend>
                     <Form.Control value={event.priceInEth} readOnly />
                     <InputGroup.Append>

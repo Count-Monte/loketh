@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { Card } from 'react-bootstrap';
-import { FaCalendarAlt, FaMoneyBillAlt, FaUserCircle } from 'react-icons/fa';
+import { FaCalendarAlt, FaEthereum, FaUserCircle } from 'react-icons/fa';
 
 import IconWithText from './IconWithText';
 
@@ -32,7 +32,7 @@ class Event extends Component {
             </IconWithText>
           </Card.Text>
           <Card.Text>
-            <IconWithText icon={FaMoneyBillAlt}>
+            <IconWithText icon={FaEthereum}>
               {event.priceInEth} ETH
             </IconWithText>
           </Card.Text>

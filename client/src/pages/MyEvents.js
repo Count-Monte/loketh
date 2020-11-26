@@ -1,6 +1,6 @@
 import React, { Component, Fragment } from 'react';
 import { CardColumns, Card, Spinner } from 'react-bootstrap';
-import { FaCalendarAlt, FaMoneyBillAlt } from 'react-icons/fa';
+import { FaCalendarAlt, FaEthereum } from 'react-icons/fa';
 
 import { IconWithText } from '../components';
 import { epochToEventDate, handleError, strLimit } from '../utils';
@@ -86,7 +86,7 @@ class MyEvents extends Component {
                           </IconWithText>
                         </Card.Text>
                         <Card.Text>
-                          <IconWithText icon={FaMoneyBillAlt}>
+                          <IconWithText icon={FaEthereum}>
                             {this.props.web3.utils.fromWei(
                               event.price, 'ether'
                             )} ETH

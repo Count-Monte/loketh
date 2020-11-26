@@ -93,7 +93,7 @@ class Event {
   get startTimeDisplay() {
     const startTime = epoch(this.startTime);
 
-    return startTime.format('D MMM YYYY H:m:s');
+    return startTime.format('DD MMM YYYY HH:mm:ss');
   }
 
   get endTime() {
