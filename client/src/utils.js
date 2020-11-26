@@ -148,6 +148,22 @@ export function arrayChunk(array, chunk = 10) {
   return result;
 }
 
+export function descPagination(total, page = 1, perPage = 10, zeroBased = true) {
+  total = zeroBased ? (total - 1) : total;
+
+  const maxId = total - ((page - 1) * perPage);
+
+  const min = zeroBased ? -1 : 0;
+  const minId = ((maxId - perPage) < min) ? min : (maxId - perPage);
+
+  console.log({ maxId, minId });
+
+  const hasPrev = maxId < total;
+  const hasNext = minId > min;
+
+  return { maxId, minId, hasPrev, hasNext };
+}
+
 export function epochToEventDate(seconds) {
   return epoch(seconds).format('MMM D, YYYY');
 }
@@ -172,18 +188,18 @@ export function handleError(error) {
   }
 }
 
-export function toEvent(event, id = 0) {
-  return new Event(event, id);
-}
-
-export function toErrorHandler(error) {
-  return new ErrorHandler(error);
-}
-
 export function strLimit(str, limit = 20) {
   if (str.length > limit) {
     return `${str.substr(0, limit)}...`;
   }
 
   return str;
+}
+
+export function toEvent(event, id = 0) {
+  return new Event(event, id);
+}
+
+export function toErrorHandler(error) {
+  return new ErrorHandler(error);
 }

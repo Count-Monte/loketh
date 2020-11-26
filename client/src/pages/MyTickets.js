@@ -2,27 +2,25 @@ import React, { Component, Fragment } from 'react';
 import classNames from 'classnames';
 import { Col, Row, Spinner } from 'react-bootstrap';
 
-import { BuyTicketForm, Event, Pagination } from '../components'
+import { Event, Pagination } from '../components';
 import { arrayChunk, descPagination, handleError, toEvent } from '../utils';
 
 const CHUNK = 3;
 
-class Events extends Component {
+class MyTickets extends Component {
   state = {
-    events: [],
     loaded: false,
     page: 1,
     paginationHasPrev: false,
     paginationHasNext: false,
     perPage: 12,
-    selectedEvent: null,
-    showBuyTicket: false,
-    totalEvents: 0
+    tickets: [],
+    totalTickets: 0
   };
 
   componentDidMount = async () => {
     if (this.props.initialized) {
-      await this.getEvents();
+      await this.getTickets();
     }
   };
 
@@ -31,45 +29,53 @@ class Events extends Component {
       this.props.initialized &&
       this.props.initialized !== prevProps.initialized
     ) {
-      await this.getEvents();
+      await this.getTickets();
     }
   };
 
-  getEvents = async (page = 1) => {
+  getTickets = async (page = 1) => {
     try {
-      this.setState({ events: [], loaded: false });
+      this.setState({ loaded: false, tickets: [] });
 
       const { accounts, loketh } = this.props;
 
-      const totalEvents = await loketh.methods.totalEvents().call({
-        from: accounts[0]
+      const [account] = accounts;
+
+      const ticketIds = await loketh.methods.ticketsOfOwner(account).call({
+        from: account
       });
 
-      this.setState({ page, totalEvents }, async () => {
-        const { page, perPage, totalEvents } = this.state;
+      const totalTickets = ticketIds.length;
+
+      this.setState({ page, totalTickets }, async () => {
+        const { page, perPage, totalTickets } = this.state;
 
         const {
           maxId,
           minId,
           hasPrev: paginationHasPrev,
           hasNext: paginationHasNext
-        } = descPagination(totalEvents, page, perPage, false);
+        } = descPagination(totalTickets, page, perPage);
 
-        const events = [];
+        console.log({ maxId, minId });
+
+        const tickets = [];
 
         for (let i = maxId; i > minId; i--) {
-          const event = await loketh.methods.getEvent(i).call({
-            from: accounts[0]
+          const id = ticketIds[i];
+
+          const event = await loketh.methods.getEvent(id).call({
+            from: account
           });
 
-          events.push(toEvent(event, i));
+          tickets.push(toEvent(event, id));
         }
 
         this.setState({
-          events: arrayChunk(events, CHUNK),
           loaded: true,
           paginationHasPrev,
-          paginationHasNext
+          paginationHasNext,
+          tickets: arrayChunk(tickets, CHUNK)
         });
       });
     } catch (error) {
@@ -79,27 +85,24 @@ class Events extends Component {
 
   render() {
     const {
-      events,
       loaded,
       page,
       paginationHasPrev,
       paginationHasNext,
       perPage,
-      selectedEvent,
-      showBuyTicket,
-      totalEvents
+      tickets,
+      totalTickets
     } = this.state;
-    const { accounts, loketh } = this.props;
 
     const fromData = ((page - 1) * perPage) + 1;
-    const toData = paginationHasNext ? page * perPage : totalEvents;
+    const toData = paginationHasNext ? page * perPage : totalTickets;
 
     return (
       <Fragment>
-        <h1>Events</h1>
+        <h1>My Tickets</h1>
         {
           loaded ? (
-            events.length > 0 ? (events.map((chunk, i) => {
+            tickets.length > 0 ? (tickets.map((chunk, i) => {
               const filler = [];
 
               for (let x = 0; x < (CHUNK - chunk.length); x++) {
@@ -111,17 +114,9 @@ class Events extends Component {
 
               return (
                 <Row className={rowClassName} key={i}>
-                  {chunk.map((event, j) => (
+                  {chunk.map((ticket, j) => (
                     <Col key={j}>
-                      <Event
-                        event={event}
-                        onClickTitle={() => {
-                          this.setState({
-                            selectedEvent: event,
-                            showBuyTicket: true
-                          });
-                        }}
-                      />
+                      <Event event={ticket} forParticipant />
                     </Col>
                   ))}
                   {filler}
@@ -129,7 +124,7 @@ class Events extends Component {
               );
             })) : (
               <p className="text-center">
-                There are no upcoming events at this time.
+                You have no tickets at this time.
               </p>
             )
           ) : (
@@ -139,32 +134,19 @@ class Events extends Component {
           )
         }
         {
-          events.length > 0 && (
+          tickets.length > 0 && (
             <Pagination
               from={fromData}
               hasPrev={paginationHasPrev}
               hasNext={paginationHasNext}
               onClickPrev={() => {
-                this.getEvents(page - 1);
+                this.getTickets(page - 1);
               }}
               onClickNext={() => {
-                this.getEvents(page + 1);
+                this.getTickets(page + 1);
               }}
               to={toData}
-              total={totalEvents}
-            />
-          )
-        }
-        {
-          loaded && (
-            <BuyTicketForm
-              accounts={accounts}
-              event={selectedEvent}
-              loketh={loketh}
-              onHide={() => {
-                this.setState({ showBuyTicket: false });
-              }}
-              show={showBuyTicket}
+              total={totalTickets}
             />
           )
         }
@@ -173,4 +155,4 @@ class Events extends Component {
   }
 }
 
-export default Events;
+export default MyTickets;

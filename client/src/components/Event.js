@@ -8,6 +8,7 @@ class Event extends Component {
   render() {
     const {
       event,
+      forParticipant = false,
       onClickTitle = () => {}
     } = this.props;
 
@@ -15,16 +16,20 @@ class Event extends Component {
       <Card>
         <Card.Body>
           <Card.Title>
-            <Card.Link
-              href="#"
-              onClick={e => {
-                e.preventDefault();
+            {
+              forParticipant ? event.shortName : (
+                <Card.Link
+                  href="#"
+                  onClick={e => {
+                    e.preventDefault();
 
-                onClickTitle(event.id);
-              }}
-            >
-              {event.shortName}
-            </Card.Link>
+                    onClickTitle(event.id);
+                  }}
+                >
+                  {event.shortName}
+                </Card.Link>
+              )
+            }
           </Card.Title>
           <Card.Text>
             <IconWithText icon={FaCalendarAlt}>
