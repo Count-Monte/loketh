@@ -31,11 +31,21 @@ class Event extends Component {
               )
             }
           </Card.Title>
-          <Card.Text>
-            <IconWithText icon={FaCalendarAlt}>
-              {event.displayDate}
-            </IconWithText>
-          </Card.Text>
+          {
+            forParticipant ? (
+              [event.startTimeDisplay, event.endTimeDisplay].map((date, i) => (
+                <Card.Text key={i}>
+                  <IconWithText icon={FaCalendarAlt}>{date}</IconWithText>
+                </Card.Text>
+              ))
+            ) : (
+              <Card.Text>
+                <IconWithText icon={FaCalendarAlt}>
+                  {event.displayDate}
+                </IconWithText>
+              </Card.Text>
+            )
+          }
           <Card.Text>
             <IconWithText icon={FaEthereum}>
               {event.priceInEth} ETH

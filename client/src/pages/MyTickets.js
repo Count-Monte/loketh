@@ -8,6 +8,8 @@ import { arrayChunk, descPagination, handleError, toEvent } from '../utils';
 const CHUNK = 3;
 
 class MyTickets extends Component {
+  _isMounted = false;
+
   state = {
     loaded: false,
     page: 1,
@@ -19,8 +21,12 @@ class MyTickets extends Component {
   };
 
   componentDidMount = async () => {
+    this._isMounted = true;
+
     if (this.props.initialized) {
       await this.getTickets();
+
+      this.listenToTicketIssued();
     }
   };
 
@@ -30,7 +36,13 @@ class MyTickets extends Component {
       this.props.initialized !== prevProps.initialized
     ) {
       await this.getTickets();
+
+      this.listenToTicketIssued();
     }
+  };
+
+  componentWillUnmount = () => {
+    this._isMounted = false;
   };
 
   getTickets = async (page = 1) => {
@@ -57,8 +69,6 @@ class MyTickets extends Component {
           hasNext: paginationHasNext
         } = descPagination(totalTickets, page, perPage);
 
-        console.log({ maxId, minId });
-
         const tickets = [];
 
         for (let i = maxId; i > minId; i--) {
@@ -81,6 +91,16 @@ class MyTickets extends Component {
     } catch (error) {
       handleError(error);
     }
+  };
+
+  listenToTicketIssued = () => {
+    const { accounts, loketh } = this.props;
+
+    loketh.events.TicketIssued({ participant: accounts[0] }).on('data', () => {
+      if (this._isMounted) {
+        this.getTickets();
+      }
+    });
   };
 
   render() {
@@ -124,7 +144,7 @@ class MyTickets extends Component {
               );
             })) : (
               <p className="text-center">
-                You have no tickets at this time.
+                You have no tickets.
               </p>
             )
           ) : (
@@ -145,6 +165,7 @@ class MyTickets extends Component {
               onClickNext={() => {
                 this.getTickets(page + 1);
               }}
+              things="tickets"
               to={toData}
               total={totalTickets}
             />

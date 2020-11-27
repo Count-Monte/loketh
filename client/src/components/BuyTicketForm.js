@@ -101,7 +101,7 @@ class BuyTicketForm extends Component {
     } else {
       if (userAlreadyHasTheTicket) {
         submitButtonChildren = (
-          'You are already buy this ticket. Check out My Tickets page.'
+          'You are already own this ticket. See My Tickets page.'
         );
       } else {
         submitButtonChildren = 'Buy Ticket';

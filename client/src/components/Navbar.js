@@ -26,16 +26,6 @@ class Navbar extends Component {
     }
   };
 
-  listenToTicketIssued = () => {
-    console.log('listenToTicketIssued');
-    const { accounts, loketh } = this.props;
-
-    loketh.events.TicketIssued({ participant: accounts[0] }).on('data', () => {
-      console.log('TicketIssued');
-      this.getAccount();
-    });
-  };
-
   getAccount = async () => {
     try {
       this.setState({ loaded: false });
@@ -56,6 +46,14 @@ class Navbar extends Component {
     } catch (error) {
       handleError(error);
     }
+  };
+
+  listenToTicketIssued = () => {
+    const { accounts, loketh } = this.props;
+
+    loketh.events.TicketIssued({ participant: accounts[0] }).on('data', () => {
+      this.getAccount();
+    });
   };
 
   render() {

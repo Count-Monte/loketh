@@ -156,8 +156,6 @@ export function descPagination(total, page = 1, perPage = 10, zeroBased = true) 
   const min = zeroBased ? -1 : 0;
   const minId = ((maxId - perPage) < min) ? min : (maxId - perPage);
 
-  console.log({ maxId, minId });
-
   const hasPrev = maxId < total;
   const hasNext = minId > min;
 

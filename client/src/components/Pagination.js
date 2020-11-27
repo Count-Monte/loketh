@@ -10,6 +10,7 @@ class Pagination extends Component {
       hasNext = false,
       onClickPrev = () => {},
       onClickNext = () => {},
+      things = 'events',
       to = 0,
       total = 0
     } = this.props;
@@ -29,7 +30,7 @@ class Pagination extends Component {
           }
         </BasePagination>
         <p className="text-center">
-          Showing {from} to {to} of {total} events
+          Showing {from} to {to} of {total} {things}
         </p>
       </Fragment>
     );
