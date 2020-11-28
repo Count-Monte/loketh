@@ -1,12 +1,22 @@
 import React, { Component, Fragment } from 'react';
-import { CardColumns, Card, Spinner } from 'react-bootstrap';
-import { FaCalendarAlt, FaEthereum } from 'react-icons/fa';
+import classNames from 'classnames';
+import { Col, Row, Spinner } from 'react-bootstrap';
 
-import { IconWithText } from '../components';
-import { epochToEventDate, handleError, strLimit } from '../utils';
+import { Event, Pagination } from '../components';
+import { arrayChunk, descPagination, handleError, toEvent } from '../utils';
+
+const CHUNK = 3;
 
 class MyEvents extends Component {
-  state = { events: [], loaded: false };
+  state = {
+    events: [],
+    loaded: false,
+    page: 1,
+    paginationHasPrev: false,
+    paginationHasNext: false,
+    perPage: 12,
+    totalEvents: 0
+  };
 
   componentDidMount = async () => {
     if (this.props.initialized) {
@@ -23,85 +33,122 @@ class MyEvents extends Component {
     }
   };
 
-  getEvents = async () => {
+  getEvents = async (page = 1) => {
     try {
       this.setState({ events: [], loaded: false });
 
       const { accounts, loketh } = this.props;
 
-      const eventIds = await loketh.methods.eventsOfOwner(accounts[0]).call({
-        from: accounts[0]
+      const [account] = accounts;
+
+      const eventIds = await loketh.methods.eventsOfOwner(account).call({
+        from: account
       });
 
-      eventIds.reverse();
+      const totalEvents = eventIds.length;
 
-      const events = [];
+      this.setState({ page, totalEvents }, async () => {
+        const { page, perPage, totalEvents } = this.state;
 
-      for (const i of eventIds) {
-        const event = await loketh.methods.getEvent(i).call({
-          from: accounts[0]
+        const {
+          maxId,
+          minId,
+          hasPrev: paginationHasPrev,
+          hasNext: paginationHasNext
+        } = descPagination(totalEvents, page, perPage);
+
+        const events = [];
+
+        for (let i = maxId; i > minId; i--) {
+          const id = eventIds[i];
+
+          const event = await loketh.methods.getEvent(id).call({
+            from: account
+          });
+
+          events.push(toEvent(event, id));
+        }
+
+        this.setState({
+          events: arrayChunk(events, CHUNK),
+          loaded: true,
+          paginationHasPrev,
+          paginationHasNext
         });
-
-        const startTime = epochToEventDate(event['2']);
-        const endTime = epochToEventDate(event['3']);
-
-        events.push({
-          name: event['0'],
-          organizer: event['1'],
-          startTime,
-          endTime,
-          onlyOneDay: startTime === endTime,
-          price: this.props.web3.utils.toBN(event['4'])
-        });
-      }
-
-      this.setState({ events, loaded: true });
+      });
     } catch (error) {
       handleError(error);
     }
   };
 
   render() {
-    const { events, loaded } = this.state;
+    const {
+      events,
+      loaded,
+      page,
+      paginationHasPrev,
+      paginationHasNext,
+      perPage,
+      totalEvents
+    } = this.state;
+
+    const fromData = ((page - 1) * perPage) + 1;
+    const toData = paginationHasNext ? page * perPage : totalEvents;
 
     return (
       <Fragment>
         <h1>My Events</h1>
         {
           loaded ? (
-            events.length > 0 ? (
-              <CardColumns>
-                {events.map((event, i) => {
-                  return (
-                    <Card key={i}>
-                      <Card.Body>
-                        <Card.Title>{strLimit(event.name, 30)}</Card.Title>
-                        <Card.Text>
-                          <IconWithText icon={FaCalendarAlt}>
-                            {
-                              event.onlyOneDay ? event.startTime : (
-                                `${event.startTime} - ${event.endTime}`
-                              )
-                            }
-                          </IconWithText>
-                        </Card.Text>
-                        <Card.Text>
-                          <IconWithText icon={FaEthereum}>
-                            {this.props.web3.utils.fromWei(
-                              event.price, 'ether'
-                            )} ETH
-                          </IconWithText>
-                        </Card.Text>
-                      </Card.Body>
-                    </Card>
-                  );
-                })}
-              </CardColumns>
-            ) : (
-              <p>You have no events at this time.</p>
+            events.length > 0 ? (events.map((chunk, i) => {
+              const filler = [];
+
+              for (let x = 0; x < (CHUNK - chunk.length); x++) {
+                filler.push(<Col key={x} />);
+              }
+
+              // eslint-disable-next-line
+              const rowClassName = classNames({ ['mt-4']: i > 0 });
+
+              return (
+                <Row className={rowClassName} key={i}>
+                  {chunk.map((event, j) => (
+                    <Col key={j}>
+                      <Event
+                        event={event}
+                        forOrganizer
+                      />
+                    </Col>
+                  ))}
+                  {filler}
+                </Row>
+              );
+            })) : (
+              <p className="text-center">
+                You have no events.
+              </p>
             )
           ) : (
-            <Spinner animation="border" />
+            <div className="d-flex justify-content-center">
+              <Spinner animation="border" />
+            </div>
+          )
+        }
+        {
+          events.length > 0 && (
+            <Pagination
+              from={fromData}
+              hasPrev={paginationHasPrev}
+              hasNext={paginationHasNext}
+              onClickPrev={() => {
+                this.getEvents(page - 1);
+              }}
+              onClickNext={() => {
+                this.getEvents(page + 1);
+              }}
+              to={toData}
+              total={totalEvents}
+            />
           )
         }
       </Fragment>

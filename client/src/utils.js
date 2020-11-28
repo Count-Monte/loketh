@@ -75,7 +75,7 @@ class Event {
   }
 
   get shortName() {
-    return strLimit(this.name, 30);
+    return strLimit(this.name, 25);
   }
 
   get organizer() {
@@ -90,24 +90,28 @@ class Event {
     return this.event['2'];
   }
 
-  get startTimeDisplay() {
-    const startTime = epoch(this.startTime);
+  get startTimeMoment() {
+    return epoch(this.startTime);
+  }
 
-    return startTime.format('DD MMM YYYY HH:mm:ss');
+  get startTimeDisplay() {
+    return this.startTimeMoment.format('DD MMM YYYY HH:mm:ss');
   }
 
   get endTime() {
     return this.event['3'];
   }
 
-  get endTimeDisplay() {
-    const endTime = epoch(this.endTime);
+  get endTimeMoment() {
+    return epoch(this.endTime);
+  }
 
-    return endTime.format('DD MMM YYYY HH:mm:ss');
+  get endTimeDisplay() {
+    return this.endTimeMoment.format('DD MMM YYYY HH:mm:ss');
   }
 
   get onlyOneDay() {
-    return epoch(this.startTime).isSame(epoch(this.endTime), 'day');
+    return this.startTimeMoment.isSame(this.endTimeMoment, 'day');
   }
 
   get displayDate() {
@@ -134,6 +138,10 @@ class Event {
 
   get moneyCollected() {
     return this.event['7'];
+  }
+
+  get moneyCollectedInEth() {
+    return fromWei(this.moneyCollected);
   }
 }
 

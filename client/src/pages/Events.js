@@ -2,7 +2,7 @@ import React, { Component, Fragment } from 'react';
 import classNames from 'classnames';
 import { Col, Row, Spinner } from 'react-bootstrap';
 
-import { BuyTicketForm, Event, Pagination } from '../components'
+import { BuyTicketForm, Event, Pagination } from '../components';
 import { arrayChunk, descPagination, handleError, toEvent } from '../utils';
 
 const CHUNK = 3;
