@@ -23,7 +23,7 @@ class Event extends Component {
         <Card.Body>
           <Card.Title>
             {
-              (forParticipant || forOrganizer) ? event.shortName : (
+              forParticipant ? event.shortName : (
                 <Card.Link
                   href="#"
                   onClick={e => {

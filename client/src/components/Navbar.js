@@ -11,6 +11,7 @@ class Navbar extends Component {
     if (this.props.initialized) {
       await this.getAccount();
 
+      this.listenToMoneyWithdrawn();
       this.listenToTicketIssued();
     }
   };
@@ -22,6 +23,7 @@ class Navbar extends Component {
     ) {
       await this.getAccount();
 
+      this.listenToMoneyWithdrawn();
       this.listenToTicketIssued();
     }
   };
@@ -46,6 +48,14 @@ class Navbar extends Component {
     } catch (error) {
       handleError(error);
     }
+  };
+
+  listenToMoneyWithdrawn = () => {
+    const { accounts, loketh } = this.props;
+
+    loketh.events.MoneyWithdrawn({ recipient: accounts[0] }).on('data', () => {
+      this.getAccount();
+    });
   };
 
   listenToTicketIssued = () => {

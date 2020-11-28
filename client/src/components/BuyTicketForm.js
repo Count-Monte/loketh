@@ -74,10 +74,29 @@ class BuyTicketForm extends Component {
     }
   };
 
+  buyTicket = async (event) => {
+    this.setState({ isBuying: true });
+
+    const { accounts, loketh } = this.props;
+
+    try {
+      await loketh.methods.buyTicket(event.id).send({
+        from: accounts[0],
+        value: event.price
+      });
+
+      this.setState({ isBuying: true, isPaymentSucceed: true });
+
+      await this.getEvent();
+    } catch (error) {
+      handleError(error);
+
+      this.setState({ isBuying: false, isPaymentSucceed: false });
+    }
+  };
+
   render() {
     const {
-      accounts,
-      loketh,
       onHide = () => {},
       show = false
     } = this.props;
@@ -103,6 +122,8 @@ class BuyTicketForm extends Component {
         submitButtonChildren = (
           'You are already own this ticket. See My Tickets page.'
         );
+      } else if (event && event.ended) {
+        submitButtonChildren = 'Can not buy ticket, event already ended.';
       } else {
         submitButtonChildren = 'Buy Ticket';
       }
@@ -134,22 +155,7 @@ class BuyTicketForm extends Component {
               <Form onSubmit={async (e) => {
                 e.preventDefault();
 
-                this.setState({ isBuying: true });
-
-                try {
-                  await loketh.methods.buyTicket(event.id).send({
-                    from: accounts[0],
-                    value: event.price
-                  });
-
-                  this.setState({ isBuying: true, isPaymentSucceed: true });
-
-                  await this.getEvent();
-                } catch (error) {
-                  handleError(error);
-
-                  this.setState({ isBuying: false, isPaymentSucceed: false });
-                }
+                this.buyTicket(event);
               }}>
                 <Form.Group>
                   <InputGroup>
@@ -211,7 +217,7 @@ class BuyTicketForm extends Component {
                       type="submit"
                       block
                       disabled={(
-                        isBuying || userAlreadyHasTheTicket || userIsTheOwner
+                        isBuying || userAlreadyHasTheTicket || event.ended
                       )}
                     >
                       {submitButtonChildren}

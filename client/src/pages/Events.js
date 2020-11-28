@@ -78,6 +78,8 @@ class Events extends Component {
   };
 
   render() {
+    const { accounts, loketh } = this.props;
+
     const {
       events,
       loaded,
@@ -89,7 +91,6 @@ class Events extends Component {
       showBuyTicket,
       totalEvents
     } = this.state;
-    const { accounts, loketh } = this.props;
 
     const fromData = ((page - 1) * perPage) + 1;
     const toData = paginationHasNext ? page * perPage : totalEvents;

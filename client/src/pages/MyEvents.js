@@ -2,7 +2,7 @@ import React, { Component, Fragment } from 'react';
 import classNames from 'classnames';
 import { Col, Row, Spinner } from 'react-bootstrap';
 
-import { Event, Pagination } from '../components';
+import { Event, Pagination, WithdrawalForm } from '../components';
 import { arrayChunk, descPagination, handleError, toEvent } from '../utils';
 
 const CHUNK = 3;
@@ -15,6 +15,8 @@ class MyEvents extends Component {
     paginationHasPrev: false,
     paginationHasNext: false,
     perPage: 12,
+    selectedEvent: null,
+    showWithdrawal: false,
     totalEvents: 0
   };
 
@@ -33,9 +35,11 @@ class MyEvents extends Component {
     }
   };
 
-  getEvents = async (page = 1) => {
+  getEvents = async (page = 1, reload = true) => {
     try {
-      this.setState({ events: [], loaded: false });
+      if (reload) {
+        this.setState({ events: [], loaded: false });
+      }
 
       const { accounts, loketh } = this.props;
 
@@ -82,6 +86,8 @@ class MyEvents extends Component {
   };
 
   render() {
+    const { accounts, loketh } = this.props;
+
     const {
       events,
       loaded,
@@ -89,6 +95,8 @@ class MyEvents extends Component {
       paginationHasPrev,
       paginationHasNext,
       perPage,
+      selectedEvent,
+      showWithdrawal,
       totalEvents
     } = this.state;
 
@@ -117,6 +125,12 @@ class MyEvents extends Component {
                       <Event
                         event={event}
                         forOrganizer
+                        onClickTitle={() => {
+                          this.setState({
+                            selectedEvent: event,
+                            showWithdrawal: true
+                          });
+                        }}
                       />
                     </Col>
                   ))}
@@ -148,6 +162,21 @@ class MyEvents extends Component {
               }}
               to={toData}
               total={totalEvents}
+            />
+          )
+        }
+        {
+          loaded && (
+            <WithdrawalForm
+              accounts={accounts}
+              event={selectedEvent}
+              loketh={loketh}
+              onHide={async () => {
+                this.setState({ showWithdrawal: false });
+
+                this.getEvents(page, false);
+              }}
+              show={showWithdrawal}
             />
           )
         }

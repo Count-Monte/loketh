@@ -1,4 +1,4 @@
-import { unix as epoch } from 'moment';
+import moment, { unix as epoch } from 'moment';
 import Web3 from 'web3';
 
 const ERRORS = {
@@ -110,6 +110,10 @@ class Event {
     return this.endTimeMoment.format('DD MMM YYYY HH:mm:ss');
   }
 
+  get ended() {
+    return moment().isAfter(this.endTimeMoment);
+  }
+
   get onlyOneDay() {
     return this.startTimeMoment.isSame(this.endTimeMoment, 'day');
   }
@@ -142,6 +146,14 @@ class Event {
 
   get moneyCollectedInEth() {
     return fromWei(this.moneyCollected);
+  }
+
+  get moneyCollectedInBN() {
+    return new Web3.utils.BN(this.moneyCollected);
+  }
+
+  get hasMoneyToWithdraw() {
+    return this.moneyCollectedInBN.gt(new Web3.utils.BN('0'));
   }
 }
 
