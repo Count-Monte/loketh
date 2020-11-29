@@ -8,6 +8,8 @@ import { arrayChunk, descPagination, handleError, toEvent } from '../utils';
 const CHUNK = 3;
 
 class MyEvents extends Component {
+  _isMounted = false;
+
   state = {
     events: [],
     loaded: false,
@@ -21,8 +23,12 @@ class MyEvents extends Component {
   };
 
   componentDidMount = async () => {
+    this._isMounted = true;
+
     if (this.props.initialized) {
       await this.getEvents();
+
+      this.listenToTicketIssued();
     }
   };
 
@@ -32,7 +38,13 @@ class MyEvents extends Component {
       this.props.initialized !== prevProps.initialized
     ) {
       await this.getEvents();
+
+      this.listenToTicketIssued();
     }
+  };
+
+  componentWillUnmount = () => {
+    this._isMounted = false;
   };
 
   getEvents = async (page = 1, reload = true) => {
@@ -78,11 +90,33 @@ class MyEvents extends Component {
           loaded: true,
           paginationHasPrev,
           paginationHasNext
+        }, () => {
+          this.listenToTicketIssued();
         });
       });
     } catch (error) {
       handleError(error);
     }
+  };
+
+  listenToTicketIssued = () => {
+    const { events, page } = this.state;
+
+    const eventIds = [];
+
+    for (const chunks of events) {
+      for (const event of chunks) {
+        eventIds.push(event.id);
+      }
+    }
+
+    const filter = { eventId: eventIds };
+
+    this.props.loketh.events.TicketIssued({ filter }).on('data', () => {
+      if (this._isMounted) {
+        this.getEvents(page, false);
+      }
+    });
   };
 
   render() {

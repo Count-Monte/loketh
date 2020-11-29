@@ -53,7 +53,9 @@ class Navbar extends Component {
   listenToMoneyWithdrawn = () => {
     const { accounts, loketh } = this.props;
 
-    loketh.events.MoneyWithdrawn({ recipient: accounts[0] }).on('data', () => {
+    const filter = { recipient: accounts[0] };
+
+    loketh.events.MoneyWithdrawn({ filter }).on('data', () => {
       this.getAccount();
     });
   };
@@ -61,7 +63,9 @@ class Navbar extends Component {
   listenToTicketIssued = () => {
     const { accounts, loketh } = this.props;
 
-    loketh.events.TicketIssued({ participant: accounts[0] }).on('data', () => {
+    const filter = { participant: accounts[0] };
+
+    loketh.events.TicketIssued({ filter }).on('data', () => {
       this.getAccount();
     });
   };

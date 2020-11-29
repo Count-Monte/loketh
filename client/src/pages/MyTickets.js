@@ -96,7 +96,9 @@ class MyTickets extends Component {
   listenToTicketIssued = () => {
     const { accounts, loketh } = this.props;
 
-    loketh.events.TicketIssued({ participant: accounts[0] }).on('data', () => {
+    const filter = { participant: accounts[0] };
+
+    loketh.events.TicketIssued({ filter }).on('data', () => {
       if (this._isMounted) {
         this.getTickets();
       }
