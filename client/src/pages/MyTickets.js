@@ -121,7 +121,7 @@ class MyTickets extends Component {
 
     return (
       <Fragment>
-        <h1>My Tickets</h1>
+        <h1 className="mt-1">My Tickets</h1>
         {
           loaded ? (
             tickets.length > 0 ? (tickets.map((chunk, i) => {
@@ -131,8 +131,7 @@ class MyTickets extends Component {
                 filler.push(<Col key={x} />);
               }
 
-              // eslint-disable-next-line
-              const rowClassName = classNames({ ['mt-4']: i > 0 });
+              const rowClassName = classNames({ 'mt-4': i > 0 });
 
               return (
                 <Row className={rowClassName} key={i}>

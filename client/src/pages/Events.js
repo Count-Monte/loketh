@@ -97,7 +97,7 @@ class Events extends Component {
 
     return (
       <Fragment>
-        <h1>Events</h1>
+        <h1 className="mt-1">Events</h1>
         {
           loaded ? (
             events.length > 0 ? (events.map((chunk, i) => {
@@ -107,8 +107,7 @@ class Events extends Component {
                 filler.push(<Col key={x} />);
               }
 
-              // eslint-disable-next-line
-              const rowClassName = classNames({ ['mt-4']: i > 0 });
+              const rowClassName = classNames({ 'mt-4': i > 0 });
 
               return (
                 <Row className={rowClassName} key={i}>

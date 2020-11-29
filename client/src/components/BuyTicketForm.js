@@ -152,7 +152,7 @@ class BuyTicketForm extends Component {
         <Modal.Body>
           {
             loaded ? (
-              <Form onSubmit={async (e) => {
+              <Form onSubmit={e => {
                 e.preventDefault();
 
                 this.buyTicket(event);

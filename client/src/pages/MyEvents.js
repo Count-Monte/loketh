@@ -1,8 +1,15 @@
 import React, { Component, Fragment } from 'react';
 import classNames from 'classnames';
-import { Col, Row, Spinner } from 'react-bootstrap';
+import { Button, Col, Row, Spinner } from 'react-bootstrap';
+import { FaCalendarPlus } from 'react-icons/fa';
 
-import { Event, Pagination, WithdrawalForm } from '../components';
+import {
+  CreateEventForm,
+  Event,
+  IconWithText,
+  Pagination,
+  WithdrawalForm
+} from '../components';
 import { arrayChunk, descPagination, handleError, toEvent } from '../utils';
 
 const CHUNK = 3;
@@ -18,6 +25,7 @@ class MyEvents extends Component {
     paginationHasNext: false,
     perPage: 12,
     selectedEvent: null,
+    showCreate: false,
     showWithdrawal: false,
     totalEvents: 0
   };
@@ -130,6 +138,7 @@ class MyEvents extends Component {
       paginationHasNext,
       perPage,
       selectedEvent,
+      showCreate,
       showWithdrawal,
       totalEvents
     } = this.state;
@@ -139,7 +148,22 @@ class MyEvents extends Component {
 
     return (
       <Fragment>
-        <h1>My Events</h1>
+        <div className="mt-1 position-relative">
+          <h1>My Events</h1>
+          <div
+            className="position-absolute"
+            style={{ top: '0px', right: '0px' }}
+          >
+            <Button
+              variant="primary"
+              onClick={() => {
+                this.setState({ showCreate: true });
+              }}
+            >
+              <IconWithText icon={FaCalendarPlus}>Create</IconWithText>
+            </Button>
+          </div>
+        </div>
         {
           loaded ? (
             events.length > 0 ? (events.map((chunk, i) => {
@@ -149,8 +173,7 @@ class MyEvents extends Component {
                 filler.push(<Col key={x} />);
               }
 
-              // eslint-disable-next-line
-              const rowClassName = classNames({ ['mt-4']: i > 0 });
+              const rowClassName = classNames({ 'mt-4': i > 0 });
 
               return (
                 <Row className={rowClassName} key={i}>
@@ -201,17 +224,29 @@ class MyEvents extends Component {
         }
         {
           loaded && (
-            <WithdrawalForm
-              accounts={accounts}
-              event={selectedEvent}
-              loketh={loketh}
-              onHide={async () => {
-                this.setState({ showWithdrawal: false });
+            <Fragment>
+              <CreateEventForm
+                accounts={accounts}
+                loketh={loketh}
+                onHide={() => {
+                  this.setState({ showCreate: false });
 
-                this.getEvents(page, false);
-              }}
-              show={showWithdrawal}
-            />
+                  this.getEvents(1, false);
+                }}
+                show={showCreate}
+              />
+              <WithdrawalForm
+                accounts={accounts}
+                event={selectedEvent}
+                loketh={loketh}
+                onHide={() => {
+                  this.setState({ showWithdrawal: false });
+
+                  this.getEvents(page, false);
+                }}
+                show={showWithdrawal}
+              />
+            </Fragment>
           )
         }
       </Fragment>
