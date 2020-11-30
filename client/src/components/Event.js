@@ -54,7 +54,9 @@ class Event extends Component {
           }
           <Card.Text>
             <IconWithText icon={FaEthereum}>
-              {event.priceInEth} ETH
+              {
+                event.isFree ? 'Free' : `${event.priceInEth} ETH`
+              }
             </IconWithText>
           </Card.Text>
           {

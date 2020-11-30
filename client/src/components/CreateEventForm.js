@@ -9,12 +9,13 @@ import {
   Form,
   InputGroup,
   Modal,
-  Row
+  Row,
+  Spinner
 } from 'react-bootstrap';
 import { FaCalendar, FaEthereum, FaUsers } from 'react-icons/fa';
 
 import Datetime from './Datetime';
-import { handleError } from '../utils';
+import { handleError, toWei } from '../utils';
 
 const etherUnits = {
   ether: 'Ether',
@@ -52,17 +53,27 @@ class CreateEventForm extends Component {
   };
 
   formSubmitted = async () => {
-    const { accounts, loketh } = this.props;
-
     this.setState({ isCreating: true });
 
-    this.validate(() => {
+    this.validate(async () => {
+      const { accounts, loketh } = this.props;
+
       try {
-        const { validation } = this.state;
+        const { event, validation } = this.state;
 
-        console.log(validation);
+        if (validation.result) {
+          await loketh.methods.createEvent(
+            event.name,
+            event.startTime,
+            event.endTime,
+            toWei(event.price, event.unit),
+            event.quota
+          ).send({ from: accounts[0] });
 
-        this.setState({ isCreating: true, isCreated: true });
+          this.setState({ isCreating: true, isCreated: true });
+        } else {
+          this.setState({ isCreating: false, isCreated: false });
+        }
       } catch (error) {
         handleError(error);
 
@@ -98,7 +109,7 @@ class CreateEventForm extends Component {
   };
 
   renderForm = () => {
-    const { event, validation } = this.state;
+    const { event, isCreating, isCreated, validation } = this.state;
 
     const { validated } = validation;
     const startTimeValue = event.startTime > 0
@@ -107,6 +118,16 @@ class CreateEventForm extends Component {
     const endTimeValue = event.endTime > 0
       ? moment.unix(event.endTime)
       : '';
+
+    let submitButtonChildren = null;
+
+    if (isCreating) {
+      submitButtonChildren = isCreated
+        ? 'You just created a new event!'
+        : (<Spinner animation="border" />);
+    } else {
+      submitButtonChildren = 'Create';
+    }
 
     return (
       <Form noValidate onSubmit={e => {
@@ -127,6 +148,7 @@ class CreateEventForm extends Component {
                 'is-valid': validated && validation.name,
                 'is-invalid': validated && !validation.name
               })}
+              disabled={isCreating}
               onChange={e => {
                 const { value: name } = e.target;
 
@@ -151,7 +173,8 @@ class CreateEventForm extends Component {
               className: classNames({
                 'is-valid': validated && validation.startTime,
                 'is-invalid': validated && !validation.startTime
-              })
+              }),
+              disabled: isCreating
             }}
             placeholder="Start date and time"
             value={startTimeValue}
@@ -184,7 +207,8 @@ class CreateEventForm extends Component {
               className: classNames({
                 'is-valid': validated && validation.endTime,
                 'is-invalid': validated && !validation.endTime
-              })
+              }),
+              disabled: isCreating
             }}
             placeholder="End date and time"
             value={endTimeValue}
@@ -219,7 +243,7 @@ class CreateEventForm extends Component {
               required
               min={1}
               type="number"
-              disabled={event.isFree}
+              disabled={event.isFree || isCreating}
               placeholder="Price"
               value={event.price}
               className={classNames({
@@ -248,7 +272,7 @@ class CreateEventForm extends Component {
             }
             <DropdownButton
               as={InputGroup.Append}
-              disabled={event.isFree}
+              disabled={event.isFree || isCreating}
               variant="outline-secondary"
               title={etherUnits[event.unit]}
               id="units-create-form"
@@ -274,6 +298,7 @@ class CreateEventForm extends Component {
               id="is-free-create-form"
               label="Free"
               checked={event.isFree}
+              disabled={isCreating}
               onChange={e => {
                 const { checked: isFree } = e.target;
                 const price = isFree ? 0 : (event.price || 1);
@@ -299,6 +324,7 @@ class CreateEventForm extends Component {
                 'is-valid': validated && validation.quota,
                 'is-invalid': validated && !validation.quota
               })}
+              disabled={isCreating}
               onChange={e => {
                 const { value: quota } = e.target;
 
@@ -325,8 +351,9 @@ class CreateEventForm extends Component {
           variant="primary"
           type="submit"
           block
+          disabled={isCreating}
         >
-          Create
+          {submitButtonChildren}
         </Button>
       </Form>
     );

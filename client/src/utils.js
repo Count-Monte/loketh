@@ -132,6 +132,12 @@ class Event {
     return fromWei(this.price);
   }
 
+  get isFree() {
+    return (new Web3.utils.BN(this.price)).eq(
+      new Web3.utils.BN('0')
+    );
+  }
+
   get quota() {
     return this.event['5'];
   }
@@ -220,4 +226,8 @@ export function toEvent(event, id = 0) {
 
 export function toErrorHandler(error) {
   return new ErrorHandler(error);
+}
+
+export function toWei(number, unit = 'ether') {
+  return Web3.utils.toWei(number.toString(), unit);
 }
