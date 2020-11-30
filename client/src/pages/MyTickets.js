@@ -10,6 +10,8 @@ const CHUNK = 3;
 class MyTickets extends Component {
   _isMounted = false;
 
+  ticketIssuedListener = null;
+
   state = {
     loaded: false,
     page: 1,
@@ -96,13 +98,22 @@ class MyTickets extends Component {
   listenToTicketIssued = () => {
     const { accounts, loketh } = this.props;
 
-    const filter = { participant: accounts[0] };
-
-    loketh.events.TicketIssued({ filter }).on('data', () => {
+    const event = 'data';
+    const callback = () => {
       if (this._isMounted) {
         this.getTickets();
       }
-    });
+    };
+
+    if (this.ticketIssuedListener) {
+      this.moneyWithdrawnListener.off(event, callback);
+      this.moneyWithdrawnListener = null;
+    }
+
+    const filter = { participant: accounts[0] };
+
+    this.moneyWithdrawnListener = loketh.events.TicketIssued({ filter });
+    this.moneyWithdrawnListener.on(event, callback);
   };
 
   render() {

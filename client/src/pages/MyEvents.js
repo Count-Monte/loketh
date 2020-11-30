@@ -17,6 +17,8 @@ const CHUNK = 3;
 class MyEvents extends Component {
   _isMounted = false;
 
+  ticketIssuedListener = null;
+
   state = {
     events: [],
     loaded: false,
@@ -108,23 +110,33 @@ class MyEvents extends Component {
   };
 
   listenToTicketIssued = () => {
+    const { loketh } = this.props;
     const { events, page } = this.state;
+
+    const event = 'data';
+    const callback = () => {
+      if (this._isMounted) {
+        this.getEvents(page, false);
+      }
+    };
+
+    if (this.ticketIssuedListener) {
+      this.moneyWithdrawnListener.off(event, callback);
+      this.moneyWithdrawnListener = null;
+    }
 
     const eventIds = [];
 
     for (const chunks of events) {
-      for (const event of chunks) {
-        eventIds.push(event.id);
+      for (const e of chunks) {
+        eventIds.push(e.id);
       }
     }
 
     const filter = { eventId: eventIds };
 
-    this.props.loketh.events.TicketIssued({ filter }).on('data', () => {
-      if (this._isMounted) {
-        this.getEvents(page, false);
-      }
-    });
+    this.moneyWithdrawnListener = loketh.events.TicketIssued({ filter });
+    this.moneyWithdrawnListener.on(event, callback);
   };
 
   render() {
