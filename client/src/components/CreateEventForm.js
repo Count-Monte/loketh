@@ -365,6 +365,8 @@ class CreateEventForm extends Component {
       show
     } = this.props;
 
+    const { isCreating, isCreated } = this.state;
+
     return (
       <Modal
         show={show}
@@ -382,7 +384,7 @@ class CreateEventForm extends Component {
         keyboard={false}
         centered
       >
-        <Modal.Header closeButton>
+        <Modal.Header closeButton={!isCreating || isCreated}>
           <Modal.Title>Create a new event</Modal.Title>
         </Modal.Header>
         <Modal.Body>
