@@ -5,7 +5,7 @@ import {
   FaCalendarAlt,
   FaEthereum,
   FaUserCircle,
-  FaUserFriends
+  FaUsers
 } from 'react-icons/fa';
 
 import { handleError, toEvent } from '../utils';
@@ -200,7 +200,7 @@ class BuyTicketForm extends Component {
                 <Form.Group>
                   <InputGroup>
                     <InputGroup.Prepend>
-                      <InputGroup.Text><FaUserFriends /></InputGroup.Text>
+                      <InputGroup.Text><FaUsers /></InputGroup.Text>
                     </InputGroup.Prepend>
                     <Form.Control
                       value={

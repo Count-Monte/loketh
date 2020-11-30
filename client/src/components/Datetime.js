@@ -7,7 +7,12 @@ import 'react-datetime/css/react-datetime.css';
 
 class Datetime extends Component {
   render() {
-    const { placeholder, required, ...props } = this.props;
+    const {
+      placeholder = '',
+      required = false,
+      validationMessage = () => {},
+      ...props
+    } = this.props;
 
     return (
       <BaseDatetime
@@ -26,6 +31,7 @@ class Datetime extends Component {
                 required={required}
                 placeholder={placeholder}
               />
+              {validationMessage()}
             </InputGroup>
           );
         }}

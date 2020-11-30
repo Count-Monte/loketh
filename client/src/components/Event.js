@@ -4,7 +4,7 @@ import {
   FaCalendarAlt,
   FaEthereum,
   FaUserCircle,
-  FaUserFriends
+  FaUsers
 } from 'react-icons/fa';
 
 import IconWithText from './IconWithText';
@@ -60,7 +60,7 @@ class Event extends Component {
           {
             forOrganizer && (
               <Card.Text>
-                <IconWithText icon={FaUserFriends}>
+                <IconWithText icon={FaUsers}>
                   {`${event.soldCounter} / ${event.quota}`}
                 </IconWithText>
               </Card.Text>
