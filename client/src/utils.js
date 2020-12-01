@@ -133,9 +133,7 @@ class Event {
   }
 
   get isFree() {
-    return (new Web3.utils.BN(this.price)).eq(
-      new Web3.utils.BN('0')
-    );
+    return toBN(this.price).eq(toBN('0'));
   }
 
   get quota() {
@@ -144,6 +142,10 @@ class Event {
 
   get soldCounter() {
     return this.event['6'];
+  }
+
+  get soldOut() {
+    return toBN(this.soldCounter).lt(toBN(this.quota)) === false;
   }
 
   get moneyCollected() {
@@ -155,11 +157,11 @@ class Event {
   }
 
   get moneyCollectedInBN() {
-    return new Web3.utils.BN(this.moneyCollected);
+    return toBN(this.moneyCollected);
   }
 
   get hasMoneyToWithdraw() {
-    return this.moneyCollectedInBN.gt(new Web3.utils.BN('0'));
+    return this.moneyCollectedInBN.gt(toBN('0'));
   }
 }
 
@@ -212,12 +214,20 @@ export function handleError(error) {
   }
 }
 
+export function isAddress(address) {
+  return Web3.utils.isAddress(address);
+}
+
 export function strLimit(str, limit = 20) {
   if (str.length > limit) {
     return `${str.substr(0, limit)}...`;
   }
 
   return str;
+}
+
+export function toBN(number) {
+  return new Web3.utils.BN(number.toString());
 }
 
 export function toEvent(event, id = 0) {

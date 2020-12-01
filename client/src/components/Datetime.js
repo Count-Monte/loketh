@@ -19,6 +19,7 @@ class Datetime extends Component {
         {...props}
         dateFormat="DD MMM YYYY"
         timeFormat="HH:mm"
+        timeConstraints={{ minutes: { step: 5 } }}
         renderInput={props => {
           return (
             <InputGroup>

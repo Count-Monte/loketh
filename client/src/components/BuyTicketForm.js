@@ -124,6 +124,8 @@ class BuyTicketForm extends Component {
         );
       } else if (event && event.ended) {
         submitButtonChildren = 'Can not buy ticket, event already ended.';
+      } else if (event && event.soldOut) {
+        submitButtonChildren = 'Can not buy ticket, event already sold out.';
       } else {
         submitButtonChildren = 'Buy Ticket';
       }
@@ -217,7 +219,10 @@ class BuyTicketForm extends Component {
                       type="submit"
                       block
                       disabled={(
-                        isBuying || userAlreadyHasTheTicket || event.ended
+                        isBuying
+                        || userAlreadyHasTheTicket
+                        || event.ended
+                        || event.soldOut
                       )}
                     >
                       {submitButtonChildren}

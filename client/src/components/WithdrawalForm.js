@@ -1,11 +1,25 @@
-import React, { Component, Fragment } from 'react';
-import { Button, Modal, Spinner } from 'react-bootstrap';
+import React, { Component } from 'react';
+import classNames from 'classnames';
+import {
+  Button,
+  Form,
+  InputGroup,
+  Modal,
+  Spinner,
+  Tab,
+  Tabs
+} from 'react-bootstrap';
+import { FaUser } from 'react-icons/fa';
 
-import { handleError, toEvent } from '../utils';
+import { handleError, isAddress, toEvent } from '../utils';
 
 class WithdrawalForm extends Component {
   state = {
+    activeTab: 'check',
+    addressToCheck: '',
     event: null,
+    isAddressValid: false,
+    isValidatingAddress: false,
     isWithdrawalSucceed: false,
     isWithdrawing: false,
     loaded: false
@@ -69,20 +83,87 @@ class WithdrawalForm extends Component {
     }
   };
 
-  render() {
+  renderCheck = () => {
+    const { accounts, loketh } = this.props;
     const {
-      onHide = () => {},
-      show = false
-    } = this.props;
+      addressToCheck,
+      event,
+      isAddressValid,
+      isValidatingAddress
+    } = this.state;
 
+    return (
+      <Form className="mt-2" noValidate onSubmit={async (e) => {
+        e.preventDefault();
+
+        const isValidAddress = isAddress(addressToCheck);
+
+        if (isValidAddress) {
+          const result = await loketh.methods.participantHasTicket(
+            addressToCheck,
+            event.id
+          ).call({ from: accounts[0] });
+
+          alert(
+            result
+              ? 'Given address is a valid participant.'
+              : 'Given address is not a valid participant.'
+          );
+        } else {
+          alert('Given address is not a valid address.');
+        }
+      }}>
+        <Form.Group>
+          <InputGroup>
+            <InputGroup.Prepend>
+              <InputGroup.Text><FaUser /></InputGroup.Text>
+            </InputGroup.Prepend>
+            <Form.Control
+              required
+              placeholder="Account address"
+              className={classNames({
+                'is-valid': addressToCheck.length > 0 && isAddressValid,
+                'is-invalid': addressToCheck.length > 0 && !isAddressValid
+              })}
+              disabled={isValidatingAddress}
+              value={addressToCheck}
+              onChange={e => {
+                const { value: addressToCheck } = e.target;
+
+                this.setState({ addressToCheck }, () => {
+                  this.setState({
+                    isAddressValid: isAddress(this.state.addressToCheck)
+                  });
+                });
+              }}
+            />
+            {
+              (addressToCheck.length > 0 && !isAddressValid) && (
+                <Form.Control.Feedback type="invalid">
+                  Address is required and must be a valid address.
+                </Form.Control.Feedback>
+              )
+            }
+          </InputGroup>
+        </Form.Group>
+        <Button
+          variant="primary"
+          type="submit"
+          block
+          disabled={isValidatingAddress}
+        >
+          Check
+        </Button>
+      </Form>
+    );
+  };
+
+  renderWithdraw = () => {
     const {
       event,
       isWithdrawalSucceed,
-      isWithdrawing,
-      loaded
+      isWithdrawing
     } = this.state;
-
-    const spinner = (<Spinner animation="border" />);
 
     const canWithdraw = event ? event.ended : false;
     const hasMoneyToWithdraw = event ? event.hasMoneyToWithdraw : false;
@@ -114,11 +195,55 @@ class WithdrawalForm extends Component {
     }
 
     return (
+      <div className="mt-2">
+        {message}
+        {
+          (
+            (canWithdraw && hasMoneyToWithdraw) &&
+            !isWithdrawalSucceed
+          ) && (
+            <Button
+              variant="primary"
+              block
+              disabled={isWithdrawing}
+              onClick={() => {
+                this.withdraw(event);
+              }}
+            >
+              {
+                isWithdrawing ? <Spinner animation="border" /> : 'Withdraw'
+              }
+            </Button>
+          )
+        }
+      </div>
+    );
+  };
+
+  render() {
+    const {
+      onHide = () => {},
+      show = false
+    } = this.props;
+
+    const {
+      activeTab,
+      event,
+      isWithdrawalSucceed,
+      isWithdrawing,
+      loaded
+    } = this.state;
+
+    return (
       <Modal
         show={show}
         onHide={() => {
           this.setState({
+            activeTab: 'check',
+            addressToCheck: '',
             event: null,
+            isAddressValid: false,
+            isValidatingAddress: false,
             isWithdrawalSucceed: false,
             isWithdrawing: false,
             loaded: false
@@ -131,36 +256,30 @@ class WithdrawalForm extends Component {
         centered
       >
         <Modal.Header closeButton={!isWithdrawing || isWithdrawalSucceed}>
-          <Modal.Title>Withdraw Money</Modal.Title>
+          <Modal.Title>
+            {loaded ? event.name : 'Loading...'}
+          </Modal.Title>
         </Modal.Header>
         <Modal.Body>
           {
             loaded ? (
-              <Fragment>
-                {message}
-                {
-                  (
-                    (canWithdraw && hasMoneyToWithdraw) &&
-                    !isWithdrawalSucceed
-                  ) && (
-                    <Button
-                      variant="primary"
-                      block
-                      disabled={isWithdrawing}
-                      onClick={() => {
-                        this.withdraw(event);
-                      }}
-                    >
-                      {
-                        isWithdrawing ? spinner : 'Withdraw'
-                      }
-                    </Button>
-                  )
-                }
-              </Fragment>
+              <Tabs
+                id="my-events-modal-tab"
+                activeKey={activeTab}
+                onSelect={tab => {
+                  this.setState({ activeTab: tab });
+                }}
+              >
+                <Tab eventKey="check" title="Check a participant">
+                  {this.renderCheck()}
+                </Tab>
+                <Tab eventKey="withdrawal" title="Withdrawal">
+                  {this.renderWithdraw()}
+                </Tab>
+              </Tabs>
             ) : (
               <div className="d-flex justify-content-center">
-                {spinner}
+                <Spinner animation="border" />
               </div>
             )
           }
