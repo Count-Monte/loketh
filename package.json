@@ -15,6 +15,8 @@
   "devDependencies": {
     "@openzeppelin/contracts": "^3.2.0",
     "@openzeppelin/test-helpers": "^0.5.9",
+    "@truffle/hdwallet-provider": "^1.2.0",
+    "dotenv": "^8.2.0",
     "faker": "^5.1.0"
   }
 }
