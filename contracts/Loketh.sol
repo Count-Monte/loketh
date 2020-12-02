@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/GSN/Context.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 
-/// @title The main contract of Loketh Event Ticketing Service.
+/// @title The main contract of Loketh Event Ticketing System.
 /// @author Roni Yusuf (https://rymanalu.github.io/)
 contract Loketh is Context {
     using EnumerableSet for EnumerableSet.AddressSet;
