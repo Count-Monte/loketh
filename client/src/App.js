@@ -56,7 +56,7 @@ class App extends Component {
     const { accounts, initialized, loketh, web3 } = this.state;
 
     return (
-      <Router>
+      <Router basename={process.env.PUBLIC_URL}>
         <Navbar
           accounts={accounts}
           initialized={initialized}

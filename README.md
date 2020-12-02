@@ -82,6 +82,7 @@ cp .env.example .env
 ```
 // client/.env
 
+PUBLIC_URL=/
 REACT_APP_NETWORK_ID=5
 ```
 

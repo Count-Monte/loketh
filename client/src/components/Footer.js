@@ -15,12 +15,8 @@ class Footer extends Component {
               LinkedIn
             </ATargetBlank>
           } &middot; {
-            <ATargetBlank href="https://github.com/rymanalu">
-              Github
-            </ATargetBlank>
-          } &middot; {
             <ATargetBlank href="https://github.com/rymanalu/loketh">
-              Source Code
+              Github
             </ATargetBlank>
           }
         </p>
