@@ -7,7 +7,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import { Footer, Navbar } from './components';
 import LokethContract from './contracts/Loketh.json';
 import getWeb3 from './getWeb3';
-import { About, Events, MyEvents, MyTickets } from './pages';
+import { Events, MyEvents, MyTickets } from './pages';
 import { handleError } from './utils';
 
 import './App.css';
@@ -65,9 +65,6 @@ class App extends Component {
         />
         <Container as="main">
           <Switch>
-            <Route path="/about">
-              <About />
-            </Route>
             <Route path="/my-events">
               <MyEvents
                 accounts={accounts}

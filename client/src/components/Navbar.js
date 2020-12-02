@@ -134,9 +134,6 @@ class Navbar extends Component {
               <Nav.Link to="/my-tickets" as={Link} eventKey="my-tickets">
                 My Tickets
               </Nav.Link>
-              <Nav.Link to="/about" as={Link} eventKey="about">
-                About
-              </Nav.Link>
             </Nav>
             {
               loaded ? (
