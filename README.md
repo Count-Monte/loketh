@@ -100,6 +100,14 @@ npm start
 
 Loketh client is a [React](https://reactjs.org/) app. You can run `npm run build` to builds the app for production.
 
+## Running Tests
+
+Loketh smart contract is well tested. Execute the command below to run the unit tests:
+
+```
+truffle test
+```
+
 ## License
 
 Loketh is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
