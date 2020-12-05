@@ -88,9 +88,9 @@ class CreateEventForm extends Component {
     const name = event.name.length > 0;
     const startTime = event.startTime > moment().unix();
     const endTime = event.endTime > event.startTime;
-    const price = event.price >= 0;
+    const price = !isNaN(parseInt(event.price)) && event.price >= 0;
     const unit = Object.keys(etherUnits).includes(event.unit);
-    const quota = event.quota > 0;
+    const quota = !isNaN(parseInt(event.quota)) && event.quota > 0;
 
     this.setState({
       validation: {
@@ -241,7 +241,7 @@ class CreateEventForm extends Component {
             </InputGroup.Prepend>
             <Form.Control
               required
-              min={1}
+              min={0}
               type="number"
               disabled={event.isFree || isCreating}
               placeholder="Price"
@@ -253,23 +253,11 @@ class CreateEventForm extends Component {
               onChange={e => {
                 const { value: price } = e.target;
 
-                this.setState({
-                  event: {
-                    ...event,
-                    price: price || 1
-                  }
-                }, () => {
+                this.setState({ event: { ...event, price } }, () => {
                   this.validate();
                 });
               }}
             />
-            {
-              (validated && !validation.price) && (
-                <Form.Control.Feedback type="invalid">
-                  Price is required and must be at least zero (free).
-                </Form.Control.Feedback>
-              )
-            }
             <DropdownButton
               as={InputGroup.Append}
               disabled={event.isFree || isCreating}
@@ -290,6 +278,13 @@ class CreateEventForm extends Component {
                 </Dropdown.Item>
               ))}
             </DropdownButton>
+            {
+              (validated && !validation.price) && (
+                <Form.Control.Feedback type="invalid">
+                  Price is required and must be at least zero (free).
+                </Form.Control.Feedback>
+              )
+            }
           </InputGroup>
           <Col sm="3">
             <Form.Check
@@ -301,10 +296,19 @@ class CreateEventForm extends Component {
               disabled={isCreating}
               onChange={e => {
                 const { checked: isFree } = e.target;
-                const price = isFree ? 0 : (event.price || 1);
+                const price = isFree ? 0 : (event.price || 0);
                 const unit = isFree ? 'ether' : event.unit;
 
-                this.setState({ event: { ...event, isFree, price, unit } });
+                this.setState({
+                  event: {
+                    ...event,
+                    isFree,
+                    price,
+                    unit
+                  }
+                }, () => {
+                  this.validate();
+                });
               }}
             />
           </Col>
@@ -328,12 +332,7 @@ class CreateEventForm extends Component {
               onChange={e => {
                 const { value: quota } = e.target;
 
-                this.setState({
-                  event: {
-                    ...event,
-                    quota: quota || 1
-                  }
-                }, () => {
+                this.setState({ event: { ...event, quota } }, () => {
                   this.validate();
                 });
               }}
