@@ -8,6 +8,10 @@ Once again, this is just an experimental smart contract implementation of event 
 
 The author has no responsibility about security, transactions, or any usage of this app.
 
+## Demo
+
+You can watch the Loketh Demo [here on YouTube](https://youtu.be/4p6Vp1jkaGo).
+
 ## Installation
 
 ### Requirements
