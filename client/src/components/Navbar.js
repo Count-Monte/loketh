@@ -34,6 +34,10 @@ class Navbar extends Component {
       this.listenToMoneyWithdrawn();
       this.listenToTicketIssued();
     }
+
+    if (this.props.accounts !== prevProps.accounts) {
+      await this.getAccount();
+    }
   };
 
   getAccount = async () => {
