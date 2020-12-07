@@ -1,5 +1,7 @@
 import React, { Component } from 'react';
 
+import ATargetBlank from './ATargetBlank';
+
 class Footer extends Component {
   render() {
     return (
@@ -24,19 +26,5 @@ class Footer extends Component {
     );
   }
 }
-
-const ATargetBlank = props => {
-  const { children, ...newProps } = props;
-
-  return (
-    <a
-      {...newProps}
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      {children}
-    </a>
-  );
-};
 
 export default Footer;
