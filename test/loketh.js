@@ -8,16 +8,99 @@ const {
 } = require('@openzeppelin/test-helpers');
 
 const Loketh = artifacts.require('Loketh');
+const TestToken = artifacts.require('TestToken');
 
 contract('Loketh', accounts => {
   let loketh;
   let latestTime;
+  let testToken;
 
   const [firstAccount, secondAccount, otherAccount] = accounts;
 
   beforeEach(async () => {
     loketh = await Loketh.new({ from: firstAccount });
     latestTime = (await time.latest()).toNumber();
+    testToken = await TestToken.new(1000000, 0, { from: firstAccount });
+  });
+
+  describe('supportedTokens', () => {
+    it('returns a zero address if token has not registered', async () => {
+      const token = await loketh.supportedTokens('TEST');
+
+      assert.equal(token, '0x0000000000000000000000000000000000000000');
+    });
+
+    it('returns the token address by given token name', async () => {
+      const tokenName = 'TEST';
+      const startTime = latestTime + faker.random.number();
+
+      await loketh.createEvent(
+        faker.lorem.words(),
+        startTime,
+        startTime + faker.random.number(),
+        faker.random.number(),
+        faker.random.number(),
+        { from: otherAccount }
+      );
+
+      await loketh.addNewToken(tokenName, testToken.address, { from: otherAccount });
+
+      const token = await loketh.supportedTokens(tokenName);
+
+      assert.equal(token, testToken.address);
+    });
+  });
+
+  describe('addNewToken', () => {
+    beforeEach(async () => {
+      const startTime = latestTime + faker.random.number();
+
+      await loketh.createEvent(
+        faker.lorem.words(),
+        startTime,
+        startTime + faker.random.number(),
+        faker.random.number(),
+        faker.random.number(),
+        { from: otherAccount }
+      );
+    });
+
+    it('reverts if the caller has zero events', async () => {
+      await expectRevert(
+        loketh.addNewToken('TEST', testToken.address, { from: firstAccount }),
+        'Loketh: You need to at least have 1 event before add a new token.'
+      );
+    });
+
+    it('reverts when given address is invalid', async () => {
+      await expectRevert(
+        loketh.addNewToken(
+          'TEST',
+          '0x0000000000000000000000000000000000000000',
+          { from: otherAccount }
+        ),
+        'Loketh: Given address is not a valid address.'
+      );
+    });
+
+    it('reverts when token is already registered', async () => {
+      await loketh.addNewToken('TEST', testToken.address, { from: otherAccount });
+
+      await expectRevert(
+        loketh.addNewToken('TEST', testToken.address, { from: otherAccount }),
+        'Loketh: Token is already registered.'
+      );
+    });
+
+    it('adds a new supported token', async () => {
+      let token = await loketh.supportedTokens('TEST');
+      assert.equal(token, '0x0000000000000000000000000000000000000000');
+
+      await loketh.addNewToken('TEST', testToken.address, { from: otherAccount });
+
+      token = await loketh.supportedTokens('TEST');
+      assert.equal(token, testToken.address);
+    });
   });
 
   describe('buyTicket', () => {

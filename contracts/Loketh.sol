@@ -51,6 +51,10 @@ contract Loketh is Context {
     ///  that they owned the ticket.
     mapping(address => EnumerableSet.UintSet) private _participantToEventIdsOwned;
 
+    /// @dev A mapping of token name and the address,
+    ///  that supported for payment.
+    mapping(string => address) public supportedTokens;
+
     /// @dev A mapping of event ID to total money collected from buyer.
     ///  Loketh changes the event balance when someone buy a ticket or
     ///  organizer withdraws the money.
@@ -86,6 +90,26 @@ contract Loketh is Context {
             1 wei,
             0
         );
+    }
+
+    /// @notice Add a new supported token for payment.
+    /// @param _tokenName The token name.
+    /// @param _tokenAddress The token address where it is deployed.
+    function addNewToken(string memory _tokenName, address _tokenAddress) external {
+        require(
+            _organizerToEventIdsOwned[msg.sender].length() > 0,
+            "Loketh: You need to at least have 1 event before add a new token."
+        );
+        require(
+            _tokenAddress != address(0),
+            "Loketh: Given address is not a valid address."
+        );
+        require(
+            supportedTokens[_tokenName] == address(0),
+            "Loketh: Token is already registered."
+        );
+
+        supportedTokens[_tokenName] = _tokenAddress;
     }
 
     /// @notice Let's buy a ticket!

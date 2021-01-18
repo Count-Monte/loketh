@@ -1,5 +1,5 @@
-var Loketh = artifacts.require("./Loketh.sol");
+const Loketh = artifacts.require('Loketh');
 
-module.exports = function(deployer) {
+module.exports = (deployer) => {
   deployer.deploy(Loketh);
 };
