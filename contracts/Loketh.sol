@@ -51,6 +51,10 @@ contract Loketh is Context {
     ///  that they owned the ticket.
     mapping(address => EnumerableSet.UintSet) private _participantToEventIdsOwned;
 
+    /// @dev An array of supported token names.
+    ///  This is related with `supportedTokens`.
+    string[] public supportedTokenNames;
+
     /// @dev A mapping of token name and the address,
     ///  that supported for payment.
     mapping(string => address) public supportedTokens;
@@ -110,6 +114,7 @@ contract Loketh is Context {
         );
 
         supportedTokens[_tokenName] = _tokenAddress;
+        supportedTokenNames.push(_tokenName);
     }
 
     /// @notice Let's buy a ticket!
@@ -325,6 +330,11 @@ contract Loketh is Context {
     /// @return The total number of tickets.
     function ticketsOf(address _address) public view returns (uint) {
         return _participantToEventIdsOwned[_address].length();
+    }
+
+    /// @return The total number of supported tokens in Loketh.
+    function totalSupportedTokens() public view returns (uint) {
+        return supportedTokenNames.length;
     }
 
     /// @dev A private method that increments the counter, adds participants,

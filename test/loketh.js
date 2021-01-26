@@ -23,6 +23,33 @@ contract('Loketh', accounts => {
     testToken = await TestToken.new(1000000, 0, { from: firstAccount });
   });
 
+  describe('supportedTokenNames', () => {
+    it('reverts when getting token by undefined index', async () => {
+      await expectRevert.assertion(loketh.supportedTokenNames(0));
+    });
+
+    it('returns the token name by correct index', async () => {
+      const startTime = latestTime + faker.random.number();
+
+      await loketh.createEvent(
+        faker.lorem.words(),
+        startTime,
+        startTime + faker.random.number(),
+        faker.random.number(),
+        faker.random.number(),
+        { from: otherAccount }
+      );
+
+      const tokenName = 'TEST';
+
+      await loketh.addNewToken(tokenName, testToken.address, { from: otherAccount });
+
+      const token = await loketh.supportedTokenNames(0);
+
+      assert.equal(token, tokenName);
+    });
+  });
+
   describe('supportedTokens', () => {
     it('returns a zero address if token has not registered', async () => {
       const token = await loketh.supportedTokens('TEST');
@@ -100,6 +127,16 @@ contract('Loketh', accounts => {
 
       token = await loketh.supportedTokens('TEST');
       assert.equal(token, testToken.address);
+    });
+
+    it('increments supported tokens', async () => {
+      let totalSupportedTokens = await loketh.totalSupportedTokens();
+      assert.equal(totalSupportedTokens, 0);
+
+      await loketh.addNewToken('TEST', testToken.address, { from: otherAccount });
+
+      totalSupportedTokens = await loketh.totalSupportedTokens();
+      assert.equal(totalSupportedTokens, 1);
     });
   });
 
@@ -821,6 +858,29 @@ contract('Loketh', accounts => {
 
       assert.equal(await loketh.ticketsOf(firstAccount), 0);
       assert.equal(await loketh.ticketsOf(secondAccount), numberOfTickets);
+    });
+  });
+
+  describe('totalSupportedTokens', () => {
+    it('returns the total number of supported tokens', async () => {
+      let totalSupportedTokens = await loketh.totalSupportedTokens();
+      assert.equal(totalSupportedTokens, 0);
+
+      const startTime = latestTime + faker.random.number();
+
+      await loketh.createEvent(
+        faker.lorem.words(),
+        startTime,
+        startTime + faker.random.number(),
+        faker.random.number(),
+        faker.random.number(),
+        { from: otherAccount }
+      );
+
+      await loketh.addNewToken('TEST', testToken.address, { from: otherAccount });
+
+      totalSupportedTokens = await loketh.totalSupportedTokens();
+      assert.equal(totalSupportedTokens, 1);
     });
   });
 });
