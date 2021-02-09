@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.6.0;
+pragma solidity ^0.7.0;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/GSN/Context.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 
 /// @title The main contract of Loketh Event Ticketing System.
 /// @author Roni Yusuf (https://rymanalu.github.io/)
-contract Loketh is Context {
+contract Loketh is Context, Ownable {
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableSet for EnumerableSet.UintSet;
     using SafeMath for uint;
@@ -33,6 +35,9 @@ contract Loketh is Context {
 
         // Number of maximum participants.
         uint quota;
+
+        // Type of currency for payment.
+        string currency;
     }
 
     /// @dev An array containing all events in Loketh.
@@ -50,6 +55,9 @@ contract Loketh is Context {
     /// @dev A mapping of event ticket holders to a set of event IDs
     ///  that they owned the ticket.
     mapping(address => EnumerableSet.UintSet) private _participantToEventIdsOwned;
+
+    /// @dev The name of native currency in Loketh: Ether.
+    string constant public nativeCurrency = "ETH";
 
     /// @dev An array of supported token names.
     ///  This is related with `supportedTokens`.
@@ -84,26 +92,41 @@ contract Loketh is Context {
     /// @dev Emitted when organizer withdrawn money from the money jar.
     event MoneyWithdrawn(uint indexed eventId, address indexed recipient, uint amount);
 
+    /// @dev Emitted when new token added.
+    event TokenAdded(
+        string indexed tokenName,
+        address indexed tokenAddress,
+        address indexed addedBy
+    );
+
+    /// @dev Emitted when token allowance for payment approved.
+    event TokenApproved(
+        uint indexed eventId,
+        address indexed owner,
+        string tokenName,
+        uint amount
+    );
+
     /// @dev Initializes contract and create the event zero to its address.
-    constructor() public {
+    constructor() {
         _createEvent(
             "Genesis",
             address(this),
             block.timestamp,
             block.timestamp,
             1 wei,
-            0
+            0,
+            nativeCurrency
         );
     }
 
     /// @notice Add a new supported token for payment.
     /// @param _tokenName The token name.
     /// @param _tokenAddress The token address where it is deployed.
-    function addNewToken(string memory _tokenName, address _tokenAddress) external {
-        require(
-            _organizerToEventIdsOwned[msg.sender].length() > 0,
-            "Loketh: You need to at least have 1 event before add a new token."
-        );
+    function addNewToken(string memory _tokenName, address _tokenAddress)
+        external
+        onlyOwner
+    {
         require(
             _tokenAddress != address(0),
             "Loketh: Given address is not a valid address."
@@ -115,6 +138,27 @@ contract Loketh is Context {
 
         supportedTokens[_tokenName] = _tokenAddress;
         supportedTokenNames.push(_tokenName);
+
+        emit TokenAdded(_tokenName, _tokenAddress, _msgSender());
+    }
+
+    /// @notice Allows Loketh to withdraw from your account for payment.
+    /// @param _eventId The event ID.
+    function approveToken(uint _eventId) external validEventId(_eventId) {
+        Event memory e = _events[_eventId];
+
+        require(
+            _usingToken(e.currency),
+            "Loketh: Only payment by ERC-20 token for approving."
+        );
+
+        IERC20 token = IERC20(supportedTokens[e.currency]);
+
+        bool success = token.approve(address(this), e.price);
+
+        require(success, "Loketh: Failed to approve token.");
+
+        emit TokenApproved(_eventId, _msgSender(), e.currency, e.price);
     }
 
     /// @notice Let's buy a ticket!
@@ -122,15 +166,32 @@ contract Loketh is Context {
     function buyTicket(uint _eventId) external payable validEventId(_eventId) {
         Event memory e = _events[_eventId];
         address participant = _msgSender();
+        bool payWithToken = _usingToken(e.currency);
+
+        IERC20 token;
+        if (payWithToken) {
+            token = IERC20(supportedTokens[e.currency]);
+        }
 
         require(
             participant != e.organizer,
             "Loketh: Organizer can not buy their own event."
         );
-        require(
-            msg.value == e.price,
-            "Loketh: Must pay exactly same with the price."
-        );
+
+        if (payWithToken) {
+            uint balance = token.balanceOf(participant);
+
+            require(
+                balance >= e.price,
+                "Loketh: Not enough balance to pay."
+            );
+        } else {
+            require(
+                msg.value == e.price,
+                "Loketh: Must pay exactly same with the price."
+            );
+        }
+
         require(
             _eventParticipants[_eventId].contains(participant) == false,
             "Loketh: Participant already bought the ticket."
@@ -144,7 +205,15 @@ contract Loketh is Context {
             "Loketh: Can not buy ticket from an event that already ended."
         );
 
-        _moneyJar[_eventId] = _moneyJar[_eventId].add(msg.value);
+        if (payWithToken) {
+            bool transferSucceed = token.transferFrom(
+                participant, address(this), e.price
+            );
+
+            require(transferSucceed, "Loketh: Transfer token failed.");
+        }
+
+        _moneyJar[_eventId] = _moneyJar[_eventId].add(e.price);
 
         _buyTicket(_eventId, participant);
     }
@@ -161,7 +230,8 @@ contract Loketh is Context {
         uint _startTime,
         uint _endTime,
         uint _price,
-        uint _quota
+        uint _quota,
+        string calldata _currency
     )
         external
         returns (uint)
@@ -175,6 +245,13 @@ contract Loketh is Context {
             _endTime > _startTime,
             "Loketh: `_endTime` must be greater than `_startTime`."
         );
+        require(
+            (
+                _usingEther(_currency) ||
+                supportedTokens[_currency] != address(0)
+            ),
+            "Loketh: `_currency` is invalid."
+        );
 
         uint newEventId = _createEvent(
             _name,
@@ -182,7 +259,8 @@ contract Loketh is Context {
             _startTime,
             _endTime,
             _price,
-            _quota
+            _quota,
+            _currency
         );
 
         return newEventId;
@@ -223,7 +301,8 @@ contract Loketh is Context {
             uint,
             uint,
             uint,
-            uint
+            uint,
+            string memory
         )
     {
         Event memory e = _events[_id];
@@ -238,7 +317,8 @@ contract Loketh is Context {
             e.price,
             e.quota,
             soldCounter,
-            moneyCollected
+            moneyCollected,
+            e.currency
         );
     }
 
@@ -309,11 +389,15 @@ contract Loketh is Context {
 
         uint amount = _moneyJar[_eventId];
 
-        require(amount > 0, "Loketh: There are no money left to be transferred.");
-
         _moneyJar[_eventId] = 0;
 
-        sender.transfer(amount);
+        if (_usingEther(e.currency)) {
+            sender.transfer(amount);
+        } else {
+            IERC20 token = IERC20(supportedTokens[e.currency]);
+
+            token.transfer(sender, amount);
+        }
 
         emit MoneyWithdrawn(_eventId, sender, amount);
     }
@@ -367,7 +451,8 @@ contract Loketh is Context {
         uint _startTime,
         uint _endTime,
         uint _price,
-        uint _quota
+        uint _quota,
+        string memory _currency
     )
         private
         returns (uint)
@@ -378,7 +463,8 @@ contract Loketh is Context {
             startTime: _startTime,
             endTime: _endTime,
             price: _price,
-            quota: _quota
+            quota: _quota,
+            currency: _currency
         });
 
         _events.push(_event);
@@ -390,5 +476,21 @@ contract Loketh is Context {
         emit EventCreated(newEventId, _organizer);
 
         return newEventId;
+    }
+
+    /// @dev Determine whether given currency is Ether.
+    /// @param _currency The currency name.
+    /// @return Returns if currency is Ether.
+    function _usingEther(string memory _currency) private pure returns (bool) {
+        return (
+            keccak256(abi.encodePacked((nativeCurrency))) == keccak256(abi.encodePacked((_currency)))
+        );
+    }
+
+    /// @dev Determine whether given currency is ERC-20 token.
+    /// @param _currency The currency name.
+    /// @return Returns if currency is an ERC-20 token.
+    function _usingToken(string memory _currency) private pure returns (bool) {
+        return !_usingEther(_currency);
     }
 }
