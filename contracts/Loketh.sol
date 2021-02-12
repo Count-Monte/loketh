@@ -128,6 +128,10 @@ contract Loketh is Context, Ownable {
         onlyOwner
     {
         require(
+            _usingToken(_tokenName),
+            "Loketh: Can not register native currency name."
+        );
+        require(
             _tokenAddress != address(0),
             "Loketh: Given address is not a valid address."
         );

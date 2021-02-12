@@ -70,6 +70,17 @@ contract('Loketh', accounts => {
       );
     });
 
+    it('reverts if the token name is the native currency name', async () => {
+      await expectRevert(
+        loketh.addNewToken(
+          NATIVE_CURRENCY,
+          testToken.address,
+          { from: firstAccount }
+        ),
+        'Loketh: Can not register native currency name.'
+      );
+    });
+
     it('reverts when given address is invalid', async () => {
       await expectRevert(
         loketh.addNewToken(
