@@ -9,7 +9,6 @@ const {
 
 const Loketh = artifacts.require('Loketh');
 const TestToken = artifacts.require('TestToken');
-const TestApproveToken = artifacts.require('TestApproveToken');
 
 const NATIVE_CURRENCY = 'ETH';
 
@@ -427,93 +426,166 @@ contract('Loketh', accounts => {
     });
   });
 
-  // describe('createEvent', () => {
-  //   let futureStartTime;
+  describe('createEvent', () => {
+    let futureStartTime;
 
-  //   beforeEach(() => {
-  //     futureStartTime = latestTime + faker.random.number();
-  //   });
+    beforeEach(() => {
+      futureStartTime = latestTime + faker.random.number();
+    });
 
-  //   it('reverts when `_quota` less than one', async () => {
-  //     await expectRevert(
-  //       loketh.createEvent(
-  //         faker.lorem.words(),
-  //         futureStartTime,
-  //         futureStartTime + faker.random.number(),
-  //         0,
-  //         0,
-  //         { from: firstAccount }
-  //       ),
-  //       'Loketh: `_quota` must be at least one.'
-  //     );
-  //   });
+    it('reverts when `_quota` less than one', async () => {
+      await expectRevert(
+        loketh.createEvent(
+          faker.lorem.words(),
+          futureStartTime,
+          futureStartTime + faker.random.number(),
+          0,
+          0,
+          NATIVE_CURRENCY,
+          { from: firstAccount }
+        ),
+        'Loketh: `_quota` must be at least one.'
+      );
+    });
 
-  //   it('reverts when `_startTime` less than `block.timestamp`', async () => {
-  //     const startTime = latestTime - faker.random.number();
+    it('reverts when `_startTime` less than `block.timestamp`', async () => {
+      const startTime = latestTime - faker.random.number();
 
-  //     await expectRevert(
-  //       loketh.createEvent(
-  //         faker.lorem.words(),
-  //         startTime,
-  //         startTime + faker.random.number(),
-  //         0,
-  //         faker.random.number(),
-  //         { from: firstAccount }
-  //       ),
-  //       'Loketh: `_startTime` must be greater than `block.timestamp`.'
-  //     );
-  //   });
+      await expectRevert(
+        loketh.createEvent(
+          faker.lorem.words(),
+          startTime,
+          startTime + faker.random.number(),
+          0,
+          faker.random.number(),
+          NATIVE_CURRENCY,
+          { from: firstAccount }
+        ),
+        'Loketh: `_startTime` must be greater than `block.timestamp`.'
+      );
+    });
 
-  //   it('reverts when `_endTime` less than `_startTime`', async () => {
-  //     await expectRevert(
-  //       loketh.createEvent(
-  //         faker.lorem.words(),
-  //         futureStartTime,
-  //         futureStartTime - faker.random.number(),
-  //         0,
-  //         faker.random.number(),
-  //         { from: firstAccount }
-  //       ),
-  //       'Loketh: `_endTime` must be greater than `_startTime`.'
-  //     );
-  //   });
+    it('reverts when `_endTime` less than `_startTime`', async () => {
+      await expectRevert(
+        loketh.createEvent(
+          faker.lorem.words(),
+          futureStartTime,
+          futureStartTime - faker.random.number(),
+          0,
+          faker.random.number(),
+          NATIVE_CURRENCY,
+          { from: firstAccount }
+        ),
+        'Loketh: `_endTime` must be greater than `_startTime`.'
+      );
+    });
 
-  //   it('adds new event to the list of events owned by organizer', async () => {
-  //     let eventsOwned = await loketh.eventsOf(firstAccount);
+    it('reverts when `_currency` is invalid', async () => {
+      await expectRevert(
+        loketh.createEvent(
+          faker.lorem.words(),
+          futureStartTime,
+          futureStartTime + faker.random.number(),
+          0,
+          faker.random.number(),
+          faker.random.word(),
+          { from: firstAccount }
+        ),
+        'Loketh: `_currency` is invalid.'
+      );
 
-  //     assert.equal(eventsOwned, 0);
+      await expectRevert(
+        loketh.createEvent(
+          faker.lorem.words(),
+          futureStartTime,
+          futureStartTime + faker.random.number(),
+          0,
+          faker.random.number(),
+          testTokenName,
+          { from: firstAccount }
+        ),
+        'Loketh: `_currency` is invalid.'
+      );
+    });
 
-  //     await loketh.createEvent(
-  //       faker.lorem.words(),
-  //       futureStartTime,
-  //       futureStartTime + faker.random.number(),
-  //       faker.random.number(),
-  //       faker.random.number(),
-  //       { from: firstAccount }
-  //     );
+    it('adds new event to the events array', async () => {
+      let totalEvents = await loketh.totalEvents();
 
-  //     eventsOwned = await loketh.eventsOf(firstAccount);
+      assert.equal(totalEvents, 0);
 
-  //     assert.equal(eventsOwned, 1);
-  //     assert.notEqual(eventsOwned, 0);
-  //   });
+      await loketh.createEvent(
+        faker.lorem.words(),
+        futureStartTime,
+        futureStartTime + faker.random.number(),
+        0,
+        faker.random.number(),
+        NATIVE_CURRENCY,
+        { from: firstAccount }
+      );
 
-  //   it('creates a new event and emits `EventCreated` event', async () => {
-  //     const receipt = await loketh.createEvent(
-  //       faker.lorem.words(),
-  //       futureStartTime,
-  //       futureStartTime + faker.random.number(),
-  //       faker.random.number(),
-  //       faker.random.number(),
-  //       { from: firstAccount }
-  //     );
+      totalEvents = await loketh.totalEvents();
 
-  //     expectEvent(receipt, 'EventCreated', {
-  //       newEventId: new BN(1),
-  //       organizer: firstAccount
-  //     });
-  //   });
-  // });
+      assert.equal(totalEvents, 1);
+      assert.notEqual(totalEvents, 0);
+    });
+
+    it('adds new event to the list of events owned by organizer', async () => {
+      let eventsOwned = await loketh.eventsOf(firstAccount);
+
+      assert.equal(eventsOwned, 0);
+
+      await loketh.createEvent(
+        faker.lorem.words(),
+        futureStartTime,
+        futureStartTime + faker.random.number(),
+        faker.random.number(),
+        faker.random.number(),
+        NATIVE_CURRENCY,
+        { from: firstAccount }
+      );
+
+      eventsOwned = await loketh.eventsOf(firstAccount);
+
+      assert.equal(eventsOwned, 1);
+      assert.notEqual(eventsOwned, 0);
+    });
+
+    it('creates a new event and emits `EventCreated` event', async () => {
+      let receipt = await loketh.createEvent(
+        faker.lorem.words(),
+        futureStartTime,
+        futureStartTime + faker.random.number(),
+        faker.random.number(),
+        faker.random.number(),
+        NATIVE_CURRENCY,
+        { from: firstAccount }
+      );
+
+      expectEvent(receipt, 'EventCreated', {
+        newEventId: new BN(1),
+        organizer: firstAccount
+      });
+
+      await loketh.addNewToken(
+        testTokenName, testToken.address, { from: firstAccount }
+      );
+
+      receipt = await loketh.createEvent(
+        faker.lorem.words(),
+        futureStartTime,
+        futureStartTime + faker.random.number(),
+        faker.random.number(),
+        faker.random.number(),
+        testTokenName,
+        { from: firstAccount }
+      );
+
+      expectEvent(receipt, 'EventCreated', {
+        newEventId: new BN(2),
+        organizer: firstAccount
+      });
+    });
+  });
 
   // describe('eventsOfOwner', () => {
   //   it('returns an empty array if given address has zero events', async () => {
