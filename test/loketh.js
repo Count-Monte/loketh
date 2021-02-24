@@ -63,14 +63,14 @@ contract('Loketh', accounts => {
   });
 
   describe('addNewToken', () => {
-    it('reverts if the caller is not the admin', async () => {
+    it('reverts when the actor is not the admin', async () => {
       await expectRevert(
         loketh.addNewToken(testTokenName, testToken.address, { from: otherAccount }),
         'Ownable: caller is not the owner'
       );
     });
 
-    it('reverts if the token name is the native currency name', async () => {
+    it('reverts when the token name is the native currency name', async () => {
       await expectRevert(
         loketh.addNewToken(
           NATIVE_CURRENCY,
@@ -132,289 +132,300 @@ contract('Loketh', accounts => {
     });
   });
 
-  describe('approveToken', () => {
-    // Event ID created by `firstAccount`.
-    const eventId = 1;
+  describe('buyTicket', () => {
+    let price, quota, endTime, eventNativeId, eventTokenId;
 
     beforeEach(async () => {
-      const startTime = latestTime + faker.random.number();
+      await loketh.addNewToken(testTokenName, testToken.address, { from: firstAccount });
 
-      await loketh.createEvent(
+      price = faker.random.number();
+      quota = faker.random.number();
+
+      const startTime = latestTime + faker.random.number();
+      endTime = startTime + faker.random.number();
+
+      let receipt = await loketh.createEvent(
         faker.lorem.words(),
         startTime,
-        startTime + faker.random.number(),
-        faker.random.number(),
-        faker.random.number(),
+        endTime,
+        price,
+        quota,
         NATIVE_CURRENCY,
         { from: firstAccount }
       );
+
+      eventNativeId = receipt.logs[0].args.newEventId;
+
+      receipt = await loketh.createEvent(
+        faker.lorem.words(),
+        startTime,
+        endTime,
+        price,
+        quota,
+        testTokenName,
+        { from: firstAccount }
+      );
+
+      eventTokenId = receipt.logs[0].args.newEventId;
     });
 
     it('reverts when given event ID is less than one', async () => {
       await expectRevert(
-        loketh.approveToken(0, { from: secondAccount }),
+        loketh.buyTicket(0, { from: secondAccount }),
         'Loketh: event ID must be at least one.'
       );
     });
 
     it('reverts when given event ID is greater than events length', async () => {
       await expectRevert(
-        loketh.approveToken(eventId + 1, { from: secondAccount }),
+        loketh.buyTicket(eventNativeId + 1, { from: secondAccount }),
         'Loketh: event ID must be lower than `_events` length.'
       );
     });
 
-    it('reverts if the event is using native currency', async () => {
+    it('reverts when the organizer buy their own event', async () => {
       await expectRevert(
-        loketh.approveToken(eventId, { from: secondAccount }),
-        'Loketh: Only payment by ERC-20 token for approving.'
+        loketh.buyTicket(eventNativeId, { from: firstAccount }),
+        'Loketh: Organizer can not buy their own event.'
       );
     });
 
-    describe('test approve', () => {
-      const eventIdApproveFailed = 2;
-      const eventIdApproveSucceed = 3;
-      let testApproveToken;
-      let price;
-      let tokenApproveFailedName;
+    it('reverts when participant buys a ticket from an event that already ended', async () => {
+      await time.increaseTo(endTime + faker.random.number());
 
-      beforeEach(async () => {
-        testApproveToken = await TestApproveToken.new(
-          1000000, 0, { from: firstAccount }
-        );
+      await expectRevert(
+        loketh.buyTicket(eventNativeId, { from: secondAccount }),
+        'Loketh: Can not buy ticket from an event that already ended.'
+      );
+    });
 
-        tokenApproveFailedName = await testApproveToken.symbol({ from: firstAccount });
-
-        await loketh.addNewToken(
-          testTokenName, testToken.address, { from: firstAccount }
-        );
-
-        await loketh.addNewToken(
-          tokenApproveFailedName, testApproveToken.address, { from: firstAccount }
-        );
-
-        const startTime = latestTime + faker.random.number();
-
-        // Add one, only to make sure zero never assigned.
-        price = faker.random.number(4) + 1;
-
-        await loketh.createEvent(
-          faker.lorem.words(),
-          startTime,
-          startTime + faker.random.number(),
-          price,
-          faker.random.number(),
-          tokenApproveFailedName,
-          { from: firstAccount }
-        );
-
-        await loketh.createEvent(
-          faker.lorem.words(),
-          startTime,
-          startTime + faker.random.number(),
-          price,
-          faker.random.number(),
-          testTokenName,
-          { from: firstAccount }
-        );
-      });
-
-      it('reverts when approvement did not succeed', async () => {
+    describe('pay with token', () => {
+      it('reverts when allowance is insufficient', async () => {
         await expectRevert(
-          loketh.approveToken(eventIdApproveFailed, { from: secondAccount }),
-          'Loketh: Failed to approve token.'
+          loketh.buyTicket(eventTokenId, { from: secondAccount }),
+          'Loketh: Allowance is insufficient.'
         );
       });
 
-      it('successfully approve the allowance and emits `TokenApprove` event', async () => {
-        const receipt = await loketh.approveToken(
-          eventIdApproveSucceed, { from: secondAccount }
+      it('reverts when user\'s balance is insufficient', async () => {
+        await testToken.approve(loketh.address, price, { from: secondAccount });
+
+        await expectRevert(
+          loketh.buyTicket(eventTokenId, { from: secondAccount }),
+          'Loketh: Balance is insufficient.'
+        );
+      });
+
+      it('adds the money from participants to its money jar', async () => {
+        let event = await loketh.getEvent(eventTokenId);
+
+        const prevMoneyCollected = event['7'];
+
+        assert.equal(prevMoneyCollected, 0);
+
+        await testToken.transfer(secondAccount, price, { from: firstAccount });
+        await testToken.approve(loketh.address, price, { from: secondAccount });
+
+        await loketh.buyTicket(eventTokenId, { from: secondAccount });
+
+        event = await loketh.getEvent(eventTokenId);
+
+        assert.equal(event['7'], price);
+        assert.notEqual(event['7'], prevMoneyCollected);
+      });
+
+      it('adds the money from participants to contract\'s balance', async () => {
+        const prevBalance = await testToken.balanceOf(loketh.address);
+
+        assert.isTrue(prevBalance.eq(new BN(0)));
+
+        await testToken.transfer(secondAccount, price, { from: firstAccount });
+        await testToken.approve(loketh.address, price, { from: secondAccount });
+
+        await loketh.buyTicket(eventTokenId, { from: secondAccount });
+
+        const newBalance = await testToken.balanceOf(loketh.address);
+
+        assert.isNotTrue(newBalance.eq(new BN(0)));
+        assert.isTrue(newBalance.gt(prevBalance));
+        assert.isTrue(newBalance.eq(new BN(price)));
+      });
+
+      it('increments the sold counter when participant buy a ticket', async () => {
+        let event = await loketh.getEvent(eventTokenId);
+
+        const prevSoldCounter = event['6'];
+
+        assert.equal(prevSoldCounter, 0);
+
+        await testToken.transfer(secondAccount, price, { from: firstAccount });
+        await testToken.approve(loketh.address, price, { from: secondAccount });
+
+        await loketh.buyTicket(eventTokenId, { from: secondAccount });
+
+        event = await loketh.getEvent(eventTokenId);
+
+        assert.equal(event['6'], 1);
+        assert.notEqual(event['6'], prevSoldCounter);
+      });
+
+      it('adds issued ticket to the list of tickets owned by participant', async () => {
+        let ticketsOwned = await loketh.ticketsOf(secondAccount);
+
+        assert.equal(ticketsOwned, 0);
+
+        await testToken.transfer(secondAccount, price, { from: firstAccount });
+        await testToken.approve(loketh.address, price, { from: secondAccount });
+
+        await loketh.buyTicket(eventTokenId, { from: secondAccount });
+
+        ticketsOwned = await loketh.ticketsOf(secondAccount);
+
+        assert.equal(ticketsOwned, 1);
+        assert.notEqual(ticketsOwned, 0);
+      });
+
+      it('successfully issued a ticket for the participant', async () => {
+        await testToken.transfer(secondAccount, price, { from: firstAccount });
+        await testToken.approve(loketh.address, price, { from: secondAccount });
+
+        const receipt = await loketh.buyTicket(
+          eventTokenId, { from: secondAccount }
         );
 
-        await expectEvent(receipt, 'TokenApproved', {
-          eventId: new BN(eventIdApproveSucceed),
-          owner: secondAccount,
-          tokenName: testTokenName,
-          amount: new BN(price)
+        await expectEvent(receipt, 'TicketIssued', {
+          eventId: new BN(eventTokenId),
+          participant: secondAccount
         });
       });
     });
+
+    describe('pay with native currency', () => {
+      it('reverts when participant pay with different amount of money', async () => {
+        await expectRevert(
+          loketh.buyTicket(eventNativeId, { from: secondAccount, value: price + 1 }),
+          'Loketh: Must pay exactly same with the price.'
+        );
+
+        await expectRevert(
+          loketh.buyTicket(eventNativeId, { from: secondAccount, value: price - 1 }),
+          'Loketh: Must pay exactly same with the price.'
+        );
+      });
+
+      it('adds the money from participants to its money jar', async () => {
+        let event = await loketh.getEvent(eventNativeId);
+
+        const prevMoneyCollected = event['7'];
+
+        assert.equal(prevMoneyCollected, 0);
+
+        await loketh.buyTicket(
+          eventNativeId, { from: secondAccount, value: price }
+        );
+
+        event = await loketh.getEvent(eventNativeId);
+
+        assert.equal(event['7'], price);
+        assert.notEqual(event['7'], prevMoneyCollected);
+      });
+
+      it('adds the money from participants to contract\'s balance', async () => {
+        const prevBalance = await balance.current(loketh.address);
+
+        assert.isTrue(prevBalance.eq(new BN(0)));
+
+        await loketh.buyTicket(
+          eventNativeId, { from: secondAccount, value: price }
+        );
+
+        const newBalance = await balance.current(loketh.address);
+
+        assert.isNotTrue(newBalance.eq(new BN(0)));
+        assert.isTrue(newBalance.gt(prevBalance));
+        assert.isTrue(newBalance.eq(new BN(price)));
+      });
+
+      it('increments the sold counter when participant buy a ticket', async () => {
+        let event = await loketh.getEvent(eventNativeId);
+
+        const prevSoldCounter = event['6'];
+
+        assert.equal(prevSoldCounter, 0);
+
+        await loketh.buyTicket(
+          eventNativeId, { from: secondAccount, value: price }
+        );
+
+        event = await loketh.getEvent(eventNativeId);
+
+        assert.equal(event['6'], 1);
+        assert.notEqual(event['6'], prevSoldCounter);
+      });
+
+      it('adds issued ticket to the list of tickets owned by participant', async () => {
+        let ticketsOwned = await loketh.ticketsOf(secondAccount);
+
+        assert.equal(ticketsOwned, 0);
+
+        await loketh.buyTicket(
+          eventNativeId, { from: secondAccount, value: price }
+        );
+
+        ticketsOwned = await loketh.ticketsOf(secondAccount);
+
+        assert.equal(ticketsOwned, 1);
+        assert.notEqual(ticketsOwned, 0);
+      });
+
+      it('successfully issued a ticket for the participant', async () => {
+        const receipt = await loketh.buyTicket(
+          eventNativeId, { from: secondAccount, value: price }
+        );
+
+        await expectEvent(receipt, 'TicketIssued', {
+          eventId: new BN(eventNativeId),
+          participant: secondAccount
+        });
+      });
+    });
+
+    it('reverts when no quota left', async () => {
+      const startTime = latestTime + faker.random.number();
+
+      // Create a new event with only one quota...
+      // Event ID: 2
+      const receipt = await loketh.createEvent(
+        faker.lorem.words(),
+        startTime,
+        startTime + faker.random.number(),
+        price,
+        1,
+        NATIVE_CURRENCY,
+        { from: firstAccount }
+      );
+
+      const eventId = receipt.logs[0].args.newEventId;
+
+      // The only one quota booked by `secondAccount`...
+      await loketh.buyTicket(eventId, { from: secondAccount, value: price });
+
+      // `otherAccount` will try to buy but it fails...
+      await expectRevert(
+        loketh.buyTicket(eventId, { from: otherAccount, value: price }),
+        'Loketh: No quota left.'
+      );
+    });
+
+    it('reverts when participant already bought the ticket', async () => {
+      await loketh.buyTicket(eventNativeId, { from: secondAccount, value: price });
+
+      await expectRevert(
+        loketh.buyTicket(eventNativeId, { from: secondAccount, value: price }),
+        'Loketh: Participant already bought the ticket.'
+      );
+    });
   });
-
-  // describe('buyTicket', () => {
-  //   // Event ID created by `firstAccount`.
-  //   const eventId = 1;
-
-  //   let price, quota, endTime;
-
-  //   beforeEach(async () => {
-  //     price = faker.random.number();
-  //     quota = faker.random.number();
-
-  //     const startTime = latestTime + faker.random.number();
-  //     endTime = startTime + faker.random.number();
-
-  //     await loketh.createEvent(
-  //       faker.lorem.words(),
-  //       startTime,
-  //       endTime,
-  //       price,
-  //       quota,
-  //       { from: firstAccount }
-  //     );
-  //   });
-
-  //   it('reverts when given event ID is less than one', async () => {
-  //     await expectRevert(
-  //       loketh.buyTicket(0, { from: secondAccount }),
-  //       'Loketh: event ID must be at least one.'
-  //     );
-  //   });
-
-  //   it('reverts when given event ID is greater than events length', async () => {
-  //     await expectRevert(
-  //       loketh.buyTicket(eventId + 1, { from: secondAccount }),
-  //       'Loketh: event ID must be lower than `_events` length.'
-  //     );
-  //   });
-
-  //   it('reverts when the organizer buy their own event', async () => {
-  //     await expectRevert(
-  //       loketh.buyTicket(eventId, { from: firstAccount }),
-  //       'Loketh: Organizer can not buy their own event.'
-  //     );
-  //   });
-
-  //   it('reverts when participant pay with different amount of money', async () => {
-  //     await expectRevert(
-  //       loketh.buyTicket(eventId, { from: secondAccount, value: price + 1 }),
-  //       'Loketh: Must pay exactly same with the price.'
-  //     );
-
-  //     await expectRevert(
-  //       loketh.buyTicket(eventId, { from: secondAccount, value: price - 1 }),
-  //       'Loketh: Must pay exactly same with the price.'
-  //     );
-  //   });
-
-  //   it('reverts when participant already bought the ticket', async () => {
-  //     await loketh.buyTicket(eventId, { from: secondAccount, value: price });
-
-  //     await expectRevert(
-  //       loketh.buyTicket(eventId, { from: secondAccount, value: price }),
-  //       'Loketh: Participant already bought the ticket.'
-  //     );
-  //   });
-
-  //   it('reverts when no quota left', async () => {
-  //     const startTime = latestTime + faker.random.number();
-
-  //     // Create a new event with only one quota...
-  //     // Event ID: 2
-  //     await loketh.createEvent(
-  //       faker.lorem.words(),
-  //       startTime,
-  //       startTime + faker.random.number(),
-  //       price,
-  //       1,
-  //       { from: firstAccount }
-  //     );
-
-  //     // The only one quota booked by `secondAccount`...
-  //     await loketh.buyTicket(2, { from: secondAccount, value: price });
-
-  //     // `otherAccount` will try to buy but it fails...
-  //     await expectRevert(
-  //       loketh.buyTicket(2, { from: otherAccount, value: price }),
-  //       'Loketh: No quota left.'
-  //     );
-  //   });
-
-  //   it('reverts when participant buys a ticket from an event that already ended', async () => {
-  //     await time.increaseTo(endTime + faker.random.number());
-
-  //     await expectRevert(
-  //       loketh.buyTicket(eventId, { from: secondAccount, value: price }),
-  //       'Loketh: Can not buy ticket from an event that already ended.'
-  //     );
-  //   });
-
-  //   it('adds the money from participants to its money jar', async () => {
-  //     let event = await loketh.getEvent(eventId);
-
-  //     const prevMoneyCollected = event['7'];
-
-  //     assert.equal(prevMoneyCollected, 0);
-
-  //     await loketh.buyTicket(
-  //       eventId, { from: secondAccount, value: price }
-  //     );
-
-  //     event = await loketh.getEvent(eventId);
-
-  //     assert.equal(event['7'], price);
-  //     assert.notEqual(event['7'], prevMoneyCollected);
-  //   });
-
-  //   it('adds the money from participants to contract\'s balance', async () => {
-  //     const prevBalance = await balance.current(loketh.address);
-
-  //     assert.isTrue(prevBalance.eq(new BN(0)));
-
-  //     await loketh.buyTicket(
-  //       eventId, { from: secondAccount, value: price }
-  //     );
-
-  //     const newBalance = await balance.current(loketh.address);
-
-  //     assert.isNotTrue(newBalance.eq(new BN(0)));
-  //     assert.isTrue(newBalance.gt(prevBalance));
-  //     assert.isTrue(newBalance.eq(new BN(price)));
-  //   });
-
-  //   it('increments the sold counter when participant buy a ticket', async () => {
-  //     let event = await loketh.getEvent(eventId);
-
-  //     const prevSoldCounter = event['6'];
-
-  //     assert.equal(prevSoldCounter, 0);
-
-  //     await loketh.buyTicket(
-  //       eventId, { from: secondAccount, value: price }
-  //     );
-
-  //     event = await loketh.getEvent(eventId);
-
-  //     assert.equal(event['6'], 1);
-  //     assert.notEqual(event['6'], prevSoldCounter);
-  //   })
-
-  //   it('adds issued ticket to the list of tickets owned by participant', async () => {
-  //     let ticketsOwned = await loketh.ticketsOf(secondAccount);
-
-  //     assert.equal(ticketsOwned, 0);
-
-  //     await loketh.buyTicket(
-  //       eventId, { from: secondAccount, value: price }
-  //     );
-
-  //     ticketsOwned = await loketh.ticketsOf(secondAccount);
-
-  //     assert.equal(ticketsOwned, 1);
-  //     assert.notEqual(ticketsOwned, 0);
-  //   });
-
-  //   it('successfully issued a ticket for the participant', async () => {
-  //     const receipt = await loketh.buyTicket(
-  //       eventId, { from: secondAccount, value: price }
-  //     );
-
-  //     await expectEvent(receipt, 'TicketIssued', {
-  //       eventId: new BN(eventId),
-  //       participant: secondAccount
-  //     });
-  //   });
-  // });
 
   // describe('createEvent', () => {
   //   let futureStartTime;

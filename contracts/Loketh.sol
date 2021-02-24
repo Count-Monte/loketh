@@ -99,14 +99,6 @@ contract Loketh is Context, Ownable {
         address indexed addedBy
     );
 
-    /// @dev Emitted when token allowance for payment approved.
-    event TokenApproved(
-        uint indexed eventId,
-        address indexed owner,
-        string tokenName,
-        uint amount
-    );
-
     /// @dev Initializes contract and create the event zero to its address.
     constructor() {
         _createEvent(
@@ -146,25 +138,6 @@ contract Loketh is Context, Ownable {
         emit TokenAdded(_tokenName, _tokenAddress, _msgSender());
     }
 
-    /// @notice Allows Loketh to withdraw from your account for payment.
-    /// @param _eventId The event ID.
-    function approveToken(uint _eventId) external validEventId(_eventId) {
-        Event memory e = _events[_eventId];
-
-        require(
-            _usingToken(e.currency),
-            "Loketh: Only payment by ERC-20 token for approving."
-        );
-
-        IERC20 token = IERC20(supportedTokens[e.currency]);
-
-        bool success = token.approve(address(this), e.price);
-
-        require(success, "Loketh: Failed to approve token.");
-
-        emit TokenApproved(_eventId, _msgSender(), e.currency, e.price);
-    }
-
     /// @notice Let's buy a ticket!
     /// @param _eventId The event ID.
     function buyTicket(uint _eventId) external payable validEventId(_eventId) {
@@ -181,13 +154,24 @@ contract Loketh is Context, Ownable {
             participant != e.organizer,
             "Loketh: Organizer can not buy their own event."
         );
+        require(
+            block.timestamp < e.endTime,
+            "Loketh: Can not buy ticket from an event that already ended."
+        );
 
         if (payWithToken) {
+            uint allowance = token.allowance(participant, address(this));
+
+            require(
+                allowance >= e.price,
+                "Loketh: Allowance is insufficient."
+            );
+
             uint balance = token.balanceOf(participant);
 
             require(
                 balance >= e.price,
-                "Loketh: Not enough balance to pay."
+                "Loketh: Balance is insufficient."
             );
         } else {
             require(
@@ -197,16 +181,12 @@ contract Loketh is Context, Ownable {
         }
 
         require(
-            _eventParticipants[_eventId].contains(participant) == false,
-            "Loketh: Participant already bought the ticket."
-        );
-        require(
             _eventParticipants[_eventId].length() < e.quota,
             "Loketh: No quota left."
         );
         require(
-            block.timestamp < e.endTime,
-            "Loketh: Can not buy ticket from an event that already ended."
+            _eventParticipants[_eventId].contains(participant) == false,
+            "Loketh: Participant already bought the ticket."
         );
 
         if (payWithToken) {
