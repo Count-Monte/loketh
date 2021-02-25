@@ -756,61 +756,62 @@ contract('Loketh', accounts => {
     });
   });
 
-  // describe('participantHasTicket', () => {
-  //   // Event ID created by `firstAccount`.
-  //   const eventId = 1;
+  describe('participantHasTicket', () => {
+    // Event ID created by `firstAccount`.
+    const eventId = 1;
 
-  //   let price;
+    let price;
 
-  //   beforeEach(async () => {
-  //     price = faker.random.number();
+    beforeEach(async () => {
+      price = faker.random.number();
 
-  //     const startTime = latestTime + faker.random.number();
+      const startTime = latestTime + faker.random.number();
 
-  //     await loketh.createEvent(
-  //       faker.lorem.words(),
-  //       startTime,
-  //       startTime + faker.random.number(),
-  //       price,
-  //       faker.random.number(),
-  //       { from: firstAccount }
-  //     );
-  //   });
+      await loketh.createEvent(
+        faker.lorem.words(),
+        startTime,
+        startTime + faker.random.number(),
+        price,
+        faker.random.number(),
+        NATIVE_CURRENCY,
+        { from: firstAccount }
+      );
+    });
 
-  //   it('reverts when given event ID is less than one', async () => {
-  //     await expectRevert(
-  //       loketh.participantHasTicket(secondAccount, 0, { from: secondAccount }),
-  //       'Loketh: event ID must be at least one.'
-  //     );
-  //   });
+    it('reverts when given event ID is less than one', async () => {
+      await expectRevert(
+        loketh.participantHasTicket(secondAccount, 0, { from: secondAccount }),
+        'Loketh: event ID must be at least one.'
+      );
+    });
 
-  //   it('reverts when given event ID is greater than events length', async () => {
-  //     await expectRevert(
-  //       loketh.participantHasTicket(
-  //         secondAccount, eventId + 1, { from: secondAccount }
-  //       ),
-  //       'Loketh: event ID must be lower than `_events` length.'
-  //     );
-  //   });
+    it('reverts when given event ID is greater than events length', async () => {
+      await expectRevert(
+        loketh.participantHasTicket(
+          secondAccount, eventId + 1, { from: secondAccount }
+        ),
+        'Loketh: event ID must be lower than `_events` length.'
+      );
+    });
 
-  //   it('returns `false` if participant did not have the ticket', async () => {
-  //     const result = await loketh.participantHasTicket(
-  //       secondAccount, eventId, { from: secondAccount }
-  //     );
+    it('returns `false` if participant did not have the ticket', async () => {
+      const result = await loketh.participantHasTicket(
+        secondAccount, eventId, { from: secondAccount }
+      );
 
-  //     assert.isNotTrue(result);
-  //   });
+      assert.isNotTrue(result);
+    });
 
-  //   it('returns `true` if participant did have the ticket', async () => {
-  //     await loketh.buyTicket(eventId, { from: secondAccount, value: price });
+    it('returns `true` if participant did have the ticket', async () => {
+      await loketh.buyTicket(eventId, { from: secondAccount, value: price });
 
-  //     const result = await loketh.participantHasTicket(
-  //       secondAccount, eventId, { from: secondAccount }
-  //     );
+      const result = await loketh.participantHasTicket(
+        secondAccount, eventId, { from: secondAccount }
+      );
 
-  //     assert.isTrue(result);
-  //   });
-  // });
+      assert.isTrue(result);
+    });
+  });
 
   // describe('ticketsOfOwner', () => {
   //   it('returns an empty array if given address has zero tickets', async () => {
