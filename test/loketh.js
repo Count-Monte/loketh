@@ -623,78 +623,87 @@ contract('Loketh', accounts => {
     });
   });
 
-  // describe('getEvent', () => {
-  //   it('reverts when given event ID is less than one', async () => {
-  //     await expectRevert(
-  //       loketh.getEvent(0),
-  //       'Loketh: event ID must be at least one.'
-  //     );
-  //   });
+  describe('getEvent', () => {
+    it('reverts when given event ID is less than one', async () => {
+      await expectRevert(
+        loketh.getEvent(0),
+        'Loketh: event ID must be at least one.'
+      );
+    });
 
-  //   it('reverts when given event ID is greater than events length', async () => {
-  //     // Add one, only to make sure zero never assigned.
-  //     const numberOfEvents = faker.random.number(4) + 1;
+    it('reverts when given event ID is greater than events length', async () => {
+      // Add one, only to make sure zero never assigned.
+      const numberOfEvents = faker.random.number(4) + 1;
 
-  //     for (let i = 0; i < numberOfEvents; i++) {
-  //       const startTime = latestTime + faker.random.number();
+      for (let i = 0; i < numberOfEvents; i++) {
+        const startTime = latestTime + faker.random.number();
 
-  //       await loketh.createEvent(
-  //         faker.lorem.words(),
-  //         startTime,
-  //         startTime + faker.random.number(),
-  //         faker.random.number(),
-  //         faker.random.number(),
-  //         { from: otherAccount }
-  //       );
-  //     }
+        await loketh.createEvent(
+          faker.lorem.words(),
+          startTime,
+          startTime + faker.random.number(),
+          faker.random.number(),
+          faker.random.number(),
+          NATIVE_CURRENCY,
+          { from: otherAccount }
+        );
+      }
 
-  //     await expectRevert(
-  //       loketh.getEvent(numberOfEvents + 1),
-  //       'Loketh: event ID must be lower than `_events` length.'
-  //     );
-  //   });
+      await expectRevert(
+        loketh.getEvent(numberOfEvents + 1),
+        'Loketh: event ID must be lower than `_events` length.'
+      );
+    });
 
-  //   it('returns event information by given id', async () => {
-  //     const startTime = latestTime + faker.random.number();
+    it('returns event information by given id', async () => {
+      const startTime = latestTime + faker.random.number();
 
-  //     // First event...
-  //     const firstEventName = faker.lorem.words();
-  //     await loketh.createEvent(
-  //       firstEventName,
-  //       startTime,
-  //       startTime + faker.random.number(),
-  //       faker.random.number(),
-  //       faker.random.number(),
-  //       { from: otherAccount }
-  //     );
+      // First event...
+      const firstEventName = faker.lorem.words();
+      await loketh.createEvent(
+        firstEventName,
+        startTime,
+        startTime + faker.random.number(),
+        faker.random.number(),
+        faker.random.number(),
+        NATIVE_CURRENCY,
+        { from: otherAccount }
+      );
 
-  //     // Second event...
-  //     const secondEventName = faker.lorem.words();
-  //     const endTime = startTime + faker.random.number();
-  //     const price = faker.random.number();
-  //     const quota = faker.random.number();
-  //     await loketh.createEvent(
-  //       secondEventName,
-  //       startTime,
-  //       endTime,
-  //       price,
-  //       quota,
-  //       { from: otherAccount }
-  //     );
+      // Second event...
+      await loketh.addNewToken(
+        testTokenName, testToken.address, { from: firstAccount }
+      );
 
-  //     const secondEvent = await loketh.getEvent(2);
+      const secondEventName = faker.lorem.words();
+      const endTime = startTime + faker.random.number();
+      const price = faker.random.number();
+      const quota = faker.random.number();
+      await loketh.createEvent(
+        secondEventName,
+        startTime,
+        endTime,
+        price,
+        quota,
+        testTokenName,
+        { from: otherAccount }
+      );
 
-  //     assert.notEqual(secondEvent['0'], firstEventName);
-  //     assert.equal(secondEvent['0'], secondEventName);
-  //     assert.equal(secondEvent['1'], otherAccount);
-  //     assert.equal(secondEvent['2'], startTime);
-  //     assert.equal(secondEvent['3'], endTime);
-  //     assert.equal(secondEvent['4'], price);
-  //     assert.equal(secondEvent['5'], quota);
-  //     assert.equal(secondEvent['6'], 0);
-  //     assert.equal(secondEvent['7'], 0);
-  //   });
-  // });
+      const secondEvent = await loketh.getEvent(2);
+
+      assert.notEqual(secondEvent['0'], firstEventName);
+      assert.equal(secondEvent['0'], secondEventName);
+      assert.equal(secondEvent['1'], otherAccount);
+      assert.equal(secondEvent['2'], startTime);
+      assert.equal(secondEvent['3'], endTime);
+      assert.equal(secondEvent['4'], price);
+      assert.equal(secondEvent['5'], quota);
+      assert.equal(secondEvent['6'], 0);
+      assert.equal(secondEvent['7'], 0);
+      assert.equal(secondEvent['8'], testTokenName);
+      assert.notEqual(secondEvent['8'], NATIVE_CURRENCY);
+    });
+  });
 
   // describe('organizerOwnsEvent', () => {
   //   // Event ID created by `firstAccount`.
