@@ -587,40 +587,41 @@ contract('Loketh', accounts => {
     });
   });
 
-  // describe('eventsOfOwner', () => {
-  //   it('returns an empty array if given address has zero events', async () => {
-  //     assert.deepEqual(await loketh.eventsOfOwner(otherAccount), []);
-  //   });
+  describe('eventsOfOwner', () => {
+    it('returns an empty array if given address has zero events', async () => {
+      assert.deepEqual(await loketh.eventsOfOwner(otherAccount), []);
+    });
 
-  //   it('returns a list of event IDs owned by given address', async () => {
-  //     // Add one, only to make sure zero never assigned.
-  //     const numberOfEvents = faker.random.number(4) + 1;
-  //     const eventIds = [];
+    it('returns a list of event IDs owned by given address', async () => {
+      // Add one, only to make sure zero never assigned.
+      const numberOfEvents = faker.random.number(4) + 1;
+      const eventIds = [];
 
-  //     for (let i = 0; i < numberOfEvents; i++) {
-  //       const assignToSecondAccount = faker.random.boolean();
-  //       const from = assignToSecondAccount ? secondAccount : firstAccount;
-  //       const startTime = latestTime + faker.random.number();
+      for (let i = 0; i < numberOfEvents; i++) {
+        const assignToSecondAccount = faker.random.boolean();
+        const from = assignToSecondAccount ? secondAccount : firstAccount;
+        const startTime = latestTime + faker.random.number();
 
-  //       await loketh.createEvent(
-  //         faker.lorem.words(),
-  //         startTime,
-  //         startTime + faker.random.number(),
-  //         faker.random.number(),
-  //         faker.random.number(),
-  //         { from }
-  //       );
+        await loketh.createEvent(
+          faker.lorem.words(),
+          startTime,
+          startTime + faker.random.number(),
+          faker.random.number(),
+          faker.random.number(),
+          NATIVE_CURRENCY,
+          { from }
+        );
 
-  //       if (assignToSecondAccount) {
-  //         eventIds.push(await loketh.totalEvents());
-  //       }
-  //     }
+        if (assignToSecondAccount) {
+          eventIds.push(await loketh.totalEvents());
+        }
+      }
 
-  //     const secondAccountEventIds = await loketh.eventsOfOwner(secondAccount);
+      const secondAccountEventIds = await loketh.eventsOfOwner(secondAccount);
 
-  //     assert.deepEqual(secondAccountEventIds, eventIds);
-  //   });
-  // });
+      assert.deepEqual(secondAccountEventIds, eventIds);
+    });
+  });
 
   // describe('getEvent', () => {
   //   it('reverts when given event ID is less than one', async () => {
