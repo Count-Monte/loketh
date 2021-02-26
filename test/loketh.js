@@ -855,29 +855,30 @@ contract('Loketh', accounts => {
     });
   });
 
-  // describe('totalEvents', () => {
-  //   it('starts at zero', async () => {
-  //     const totalEvents = await loketh.totalEvents();
+  describe('totalEvents', () => {
+    it('starts at zero', async () => {
+      const totalEvents = await loketh.totalEvents();
 
-  //     assert.equal(totalEvents, 0);
-  //   });
+      assert.equal(totalEvents, 0);
+    });
 
-  //   it('increments when a new event created', async () => {
-  //     const startTime = latestTime + faker.random.number();
+    it('increments when a new event created', async () => {
+      const startTime = latestTime + faker.random.number();
 
-  //     assert.equal(await loketh.totalEvents(), 0);
+      assert.equal(await loketh.totalEvents(), 0);
 
-  //     await loketh.createEvent(
-  //       faker.lorem.words(),
-  //       startTime,
-  //       startTime + faker.random.number(),
-  //       faker.random.number(),
-  //       faker.random.number()
-  //     );
+      await loketh.createEvent(
+        faker.lorem.words(),
+        startTime,
+        startTime + faker.random.number(),
+        faker.random.number(),
+        faker.random.number(),
+        NATIVE_CURRENCY
+      );
 
-  //     assert.equal(await loketh.totalEvents(), 1);
-  //   });
-  // });
+      assert.equal(await loketh.totalEvents(), 1);
+    });
+  });
 
   // describe('withdrawMoney', () => {
   //   // Event ID created by `firstAccount`.
