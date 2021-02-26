@@ -813,46 +813,47 @@ contract('Loketh', accounts => {
     });
   });
 
-  // describe('ticketsOfOwner', () => {
-  //   it('returns an empty array if given address has zero tickets', async () => {
-  //     assert.deepEqual(await loketh.ticketsOfOwner(otherAccount), []);
-  //   });
+  describe('ticketsOfOwner', () => {
+    it('returns an empty array if given address has zero tickets', async () => {
+      assert.deepEqual(await loketh.ticketsOfOwner(otherAccount), []);
+    });
 
-  //   it('returns a list of ticket (event) IDs owned by given address', async () => {
-  //     // Add one, only to make sure zero never assigned.
-  //     const numberOfTickets = faker.random.number(4) + 1;
-  //     const eventIds = [];
+    it('returns a list of ticket (event) IDs owned by given address', async () => {
+      // Add one, only to make sure zero never assigned.
+      const numberOfTickets = faker.random.number(4) + 1;
+      const eventIds = [];
 
-  //     for (let i = 1; i <= numberOfTickets; i++) {
-  //       const assignToSecondAccount = faker.random.boolean();
-  //       const startTime = latestTime + faker.random.number();
-  //       const price = faker.random.number();
+      for (let i = 1; i <= numberOfTickets; i++) {
+        const assignToSecondAccount = faker.random.boolean();
+        const startTime = latestTime + faker.random.number();
+        const price = faker.random.number();
 
-  //       await loketh.createEvent(
-  //         faker.lorem.words(),
-  //         startTime,
-  //         startTime + faker.random.number(),
-  //         price,
-  //         faker.random.number(),
-  //         { from: firstAccount }
-  //       );
+        await loketh.createEvent(
+          faker.lorem.words(),
+          startTime,
+          startTime + faker.random.number(),
+          price,
+          faker.random.number(),
+          NATIVE_CURRENCY,
+          { from: firstAccount }
+        );
 
-  //       if (assignToSecondAccount) {
-  //         const totalEvents = await loketh.totalEvents();
+        if (assignToSecondAccount) {
+          const totalEvents = await loketh.totalEvents();
 
-  //         await loketh.buyTicket(
-  //           totalEvents, { from: secondAccount, value: price }
-  //         );
+          await loketh.buyTicket(
+            totalEvents, { from: secondAccount, value: price }
+          );
 
-  //         eventIds.push(totalEvents);
-  //       }
-  //     }
+          eventIds.push(totalEvents);
+        }
+      }
 
-  //     const secondAccountEventIds = await loketh.ticketsOfOwner(secondAccount);
+      const secondAccountEventIds = await loketh.ticketsOfOwner(secondAccount);
 
-  //     assert.deepEqual(secondAccountEventIds, eventIds);
-  //   });
-  // });
+      assert.deepEqual(secondAccountEventIds, eventIds);
+    });
+  });
 
   // describe('totalEvents', () => {
   //   it('starts at zero', async () => {
