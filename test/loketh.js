@@ -1126,31 +1126,32 @@ contract('Loketh', accounts => {
     });
   });
 
-  // describe('ticketsOf', () => {
-  //   it('returns total number of tickets owned by given address', async () => {
-  //     // Add one, only to make sure zero never assigned.
-  //     const numberOfTickets = faker.random.number(4) + 1;
+  describe('ticketsOf', () => {
+    it('returns total number of tickets owned by given address', async () => {
+      // Add one, only to make sure zero never assigned.
+      const numberOfTickets = faker.random.number(4) + 1;
 
-  //     for (let i = 1; i <= numberOfTickets; i++) {
-  //       const startTime = latestTime + faker.random.number();
-  //       const price = faker.random.number();
+      for (let i = 1; i <= numberOfTickets; i++) {
+        const startTime = latestTime + faker.random.number();
+        const price = faker.random.number();
 
-  //       await loketh.createEvent(
-  //         faker.lorem.words(),
-  //         startTime,
-  //         startTime + faker.random.number(),
-  //         price,
-  //         faker.random.number(),
-  //         { from: firstAccount }
-  //       );
+        await loketh.createEvent(
+          faker.lorem.words(),
+          startTime,
+          startTime + faker.random.number(),
+          price,
+          faker.random.number(),
+          NATIVE_CURRENCY,
+          { from: firstAccount }
+        );
 
-  //       await loketh.buyTicket(i, { from: secondAccount, value: price });
-  //     }
+        await loketh.buyTicket(i, { from: secondAccount, value: price });
+      }
 
-  //     assert.equal(await loketh.ticketsOf(firstAccount), 0);
-  //     assert.equal(await loketh.ticketsOf(secondAccount), numberOfTickets);
-  //   });
-  // });
+      assert.equal(await loketh.ticketsOf(firstAccount), 0);
+      assert.equal(await loketh.ticketsOf(secondAccount), numberOfTickets);
+    });
+  });
 
   // describe('totalSupportedTokens', () => {
   //   it('returns the total number of supported tokens', async () => {
