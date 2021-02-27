@@ -1102,28 +1102,29 @@ contract('Loketh', accounts => {
     });
   });
 
-  // describe('eventsOf', () => {
-  //   it('returns total number of events owned by given address', async () => {
-  //     // Add one, only to make sure zero never assigned.
-  //     const numberOfEvents = faker.random.number(4) + 1;
+  describe('eventsOf', () => {
+    it('returns total number of events owned by given address', async () => {
+      // Add one, only to make sure zero never assigned.
+      const numberOfEvents = faker.random.number(4) + 1;
 
-  //     for (let i = 0; i < numberOfEvents; i++) {
-  //       const startTime = latestTime + faker.random.number();
+      for (let i = 0; i < numberOfEvents; i++) {
+        const startTime = latestTime + faker.random.number();
 
-  //       await loketh.createEvent(
-  //         faker.lorem.words(),
-  //         startTime,
-  //         startTime + faker.random.number(),
-  //         faker.random.number(),
-  //         faker.random.number(),
-  //         { from: secondAccount }
-  //       );
-  //     }
+        await loketh.createEvent(
+          faker.lorem.words(),
+          startTime,
+          startTime + faker.random.number(),
+          faker.random.number(),
+          faker.random.number(),
+          NATIVE_CURRENCY,
+          { from: secondAccount }
+        );
+      }
 
-  //     assert.equal(await loketh.eventsOf(firstAccount), 0);
-  //     assert.equal(await loketh.eventsOf(secondAccount), numberOfEvents);
-  //   });
-  // });
+      assert.equal(await loketh.eventsOf(firstAccount), 0);
+      assert.equal(await loketh.eventsOf(secondAccount), numberOfEvents);
+    });
+  });
 
   // describe('ticketsOf', () => {
   //   it('returns total number of tickets owned by given address', async () => {
