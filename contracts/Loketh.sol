@@ -90,7 +90,9 @@ contract Loketh is Context, Ownable {
     event TicketIssued(uint indexed eventId, address indexed participant);
 
     /// @dev Emitted when organizer withdrawn money from the money jar.
-    event MoneyWithdrawn(uint indexed eventId, address indexed recipient, uint amount);
+    event MoneyWithdrawn(
+        uint indexed eventId, address indexed recipient, uint amount
+    );
 
     /// @dev Emitted when new token added.
     event TokenAdded(

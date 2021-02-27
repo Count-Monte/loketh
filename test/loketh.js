@@ -25,6 +25,9 @@ contract('Loketh', accounts => {
     latestTime = (await time.latest()).toNumber();
     testToken = await TestToken.new(1000000, 0, { from: firstAccount });
     testTokenName = await testToken.symbol({ from: firstAccount })
+
+    await testToken.transfer(secondAccount, 100000, { from: firstAccount });
+    await testToken.transfer(otherAccount, 100000, { from: firstAccount });
   });
 
   describe('nativeCurrency', () => {
@@ -37,7 +40,9 @@ contract('Loketh', accounts => {
 
   describe('supportedTokenNames', () => {
     it('returns the token name by correct index', async () => {
-      await loketh.addNewToken(testTokenName, testToken.address, { from: firstAccount });
+      await loketh.addNewToken(
+        testTokenName, testToken.address, { from: firstAccount }
+      );
 
       const token = await loketh.supportedTokenNames(0);
 
@@ -53,7 +58,9 @@ contract('Loketh', accounts => {
     });
 
     it('returns the token address by given token name', async () => {
-      await loketh.addNewToken(testTokenName, testToken.address, { from: firstAccount });
+      await loketh.addNewToken(
+        testTokenName, testToken.address, { from: firstAccount }
+      );
 
       const token = await loketh.supportedTokens(testTokenName);
 
@@ -92,7 +99,9 @@ contract('Loketh', accounts => {
     });
 
     it('reverts when token is already registered', async () => {
-      await loketh.addNewToken(testTokenName, testToken.address, { from: firstAccount });
+      await loketh.addNewToken(
+        testTokenName, testToken.address, { from: firstAccount }
+      );
 
       await expectRevert(
         loketh.addNewToken(testTokenName, testToken.address, { from: firstAccount }),
@@ -124,7 +133,9 @@ contract('Loketh', accounts => {
       let totalSupportedTokens = await loketh.totalSupportedTokens();
       assert.equal(totalSupportedTokens, 0);
 
-      await loketh.addNewToken(testTokenName, testToken.address, { from: firstAccount });
+      await loketh.addNewToken(
+        testTokenName, testToken.address, { from: firstAccount }
+      );
 
       totalSupportedTokens = await loketh.totalSupportedTokens();
       assert.equal(totalSupportedTokens, 1);
@@ -135,7 +146,9 @@ contract('Loketh', accounts => {
     let price, quota, endTime, eventNativeId, eventTokenId;
 
     beforeEach(async () => {
-      await loketh.addNewToken(testTokenName, testToken.address, { from: firstAccount });
+      await loketh.addNewToken(
+        testTokenName, testToken.address, { from: firstAccount }
+      );
 
       price = faker.random.number();
       quota = faker.random.number();
@@ -196,107 +209,6 @@ contract('Loketh', accounts => {
         loketh.buyTicket(eventNativeId, { from: secondAccount }),
         'Loketh: Can not buy ticket from an event that already ended.'
       );
-    });
-
-    describe('pay with token', () => {
-      it('reverts when allowance is insufficient', async () => {
-        await expectRevert(
-          loketh.buyTicket(eventTokenId, { from: secondAccount }),
-          'Loketh: Allowance is insufficient.'
-        );
-      });
-
-      it('reverts when user\'s balance is insufficient', async () => {
-        await testToken.approve(loketh.address, price, { from: secondAccount });
-
-        await expectRevert(
-          loketh.buyTicket(eventTokenId, { from: secondAccount }),
-          'Loketh: Balance is insufficient.'
-        );
-      });
-
-      it('adds the money from participants to its money jar', async () => {
-        let event = await loketh.getEvent(eventTokenId);
-
-        const prevMoneyCollected = event['7'];
-
-        assert.equal(prevMoneyCollected, 0);
-
-        await testToken.transfer(secondAccount, price, { from: firstAccount });
-        await testToken.approve(loketh.address, price, { from: secondAccount });
-
-        await loketh.buyTicket(eventTokenId, { from: secondAccount });
-
-        event = await loketh.getEvent(eventTokenId);
-
-        assert.equal(event['7'], price);
-        assert.notEqual(event['7'], prevMoneyCollected);
-      });
-
-      it('adds the money from participants to contract\'s balance', async () => {
-        const prevBalance = await testToken.balanceOf(loketh.address);
-
-        assert.isTrue(prevBalance.eq(new BN(0)));
-
-        await testToken.transfer(secondAccount, price, { from: firstAccount });
-        await testToken.approve(loketh.address, price, { from: secondAccount });
-
-        await loketh.buyTicket(eventTokenId, { from: secondAccount });
-
-        const newBalance = await testToken.balanceOf(loketh.address);
-
-        assert.isNotTrue(newBalance.eq(new BN(0)));
-        assert.isTrue(newBalance.gt(prevBalance));
-        assert.isTrue(newBalance.eq(new BN(price)));
-      });
-
-      it('increments the sold counter when participant buy a ticket', async () => {
-        let event = await loketh.getEvent(eventTokenId);
-
-        const prevSoldCounter = event['6'];
-
-        assert.equal(prevSoldCounter, 0);
-
-        await testToken.transfer(secondAccount, price, { from: firstAccount });
-        await testToken.approve(loketh.address, price, { from: secondAccount });
-
-        await loketh.buyTicket(eventTokenId, { from: secondAccount });
-
-        event = await loketh.getEvent(eventTokenId);
-
-        assert.equal(event['6'], 1);
-        assert.notEqual(event['6'], prevSoldCounter);
-      });
-
-      it('adds issued ticket to the list of tickets owned by participant', async () => {
-        let ticketsOwned = await loketh.ticketsOf(secondAccount);
-
-        assert.equal(ticketsOwned, 0);
-
-        await testToken.transfer(secondAccount, price, { from: firstAccount });
-        await testToken.approve(loketh.address, price, { from: secondAccount });
-
-        await loketh.buyTicket(eventTokenId, { from: secondAccount });
-
-        ticketsOwned = await loketh.ticketsOf(secondAccount);
-
-        assert.equal(ticketsOwned, 1);
-        assert.notEqual(ticketsOwned, 0);
-      });
-
-      it('successfully issued a ticket for the participant', async () => {
-        await testToken.transfer(secondAccount, price, { from: firstAccount });
-        await testToken.approve(loketh.address, price, { from: secondAccount });
-
-        const receipt = await loketh.buyTicket(
-          eventTokenId, { from: secondAccount }
-        );
-
-        await expectEvent(receipt, 'TicketIssued', {
-          eventId: new BN(eventTokenId),
-          participant: secondAccount
-        });
-      });
     });
 
     describe('pay with native currency', () => {
@@ -384,6 +296,102 @@ contract('Loketh', accounts => {
 
         await expectEvent(receipt, 'TicketIssued', {
           eventId: new BN(eventNativeId),
+          participant: secondAccount
+        });
+      });
+    });
+
+    describe('pay with token', () => {
+      it('reverts when allowance is insufficient', async () => {
+        await expectRevert(
+          loketh.buyTicket(eventTokenId, { from: secondAccount }),
+          'Loketh: Allowance is insufficient.'
+        );
+      });
+
+      it('reverts when user\'s balance is insufficient', async () => {
+        await testToken.approve(loketh.address, price, { from: accounts[3] });
+
+        await expectRevert(
+          loketh.buyTicket(eventTokenId, { from: accounts[3] }),
+          'Loketh: Balance is insufficient.'
+        );
+      });
+
+      it('adds the money from participants to its money jar', async () => {
+        let event = await loketh.getEvent(eventTokenId);
+
+        const prevMoneyCollected = event['7'];
+
+        assert.equal(prevMoneyCollected, 0);
+
+        await testToken.approve(loketh.address, price, { from: secondAccount });
+
+        await loketh.buyTicket(eventTokenId, { from: secondAccount });
+
+        event = await loketh.getEvent(eventTokenId);
+
+        assert.equal(event['7'], price);
+        assert.notEqual(event['7'], prevMoneyCollected);
+      });
+
+      it('adds the money from participants to contract\'s balance', async () => {
+        const prevBalance = await testToken.balanceOf(loketh.address);
+
+        assert.isTrue(prevBalance.eq(new BN(0)));
+
+        await testToken.approve(loketh.address, price, { from: secondAccount });
+
+        await loketh.buyTicket(eventTokenId, { from: secondAccount });
+
+        const newBalance = await testToken.balanceOf(loketh.address);
+
+        assert.isNotTrue(newBalance.eq(new BN(0)));
+        assert.isTrue(newBalance.gt(prevBalance));
+        assert.isTrue(newBalance.eq(new BN(price)));
+      });
+
+      it('increments the sold counter when participant buy a ticket', async () => {
+        let event = await loketh.getEvent(eventTokenId);
+
+        const prevSoldCounter = event['6'];
+
+        assert.equal(prevSoldCounter, 0);
+
+        await testToken.approve(loketh.address, price, { from: secondAccount });
+
+        await loketh.buyTicket(eventTokenId, { from: secondAccount });
+
+        event = await loketh.getEvent(eventTokenId);
+
+        assert.equal(event['6'], 1);
+        assert.notEqual(event['6'], prevSoldCounter);
+      });
+
+      it('adds issued ticket to the list of tickets owned by participant', async () => {
+        let ticketsOwned = await loketh.ticketsOf(secondAccount);
+
+        assert.equal(ticketsOwned, 0);
+
+        await testToken.approve(loketh.address, price, { from: secondAccount });
+
+        await loketh.buyTicket(eventTokenId, { from: secondAccount });
+
+        ticketsOwned = await loketh.ticketsOf(secondAccount);
+
+        assert.equal(ticketsOwned, 1);
+        assert.notEqual(ticketsOwned, 0);
+      });
+
+      it('successfully issued a ticket for the participant', async () => {
+        await testToken.approve(loketh.address, price, { from: secondAccount });
+
+        const receipt = await loketh.buyTicket(
+          eventTokenId, { from: secondAccount }
+        );
+
+        await expectEvent(receipt, 'TicketIssued', {
+          eventId: new BN(eventTokenId),
           participant: secondAccount
         });
       });
@@ -880,135 +888,219 @@ contract('Loketh', accounts => {
     });
   });
 
-  // describe('withdrawMoney', () => {
-  //   // Event ID created by `firstAccount`.
-  //   const eventId = 1;
+  describe('withdrawMoney', () => {
+    let priceNative, endTime, eventNativeId, eventTokenId;
 
-  //   let price, endTime;
+    beforeEach(async () => {
+      await loketh.addNewToken(
+        testTokenName, testToken.address, { from: firstAccount }
+      );
 
-  //   beforeEach(async () => {
-  //     price = web3.utils.toWei('1', 'ether');
+      priceNative = web3.utils.toWei('1', 'ether');
+      priceToken = faker.random.number(4) + 1;
 
-  //     const startTime = latestTime + faker.random.number();
-  //     endTime = startTime + faker.random.number();
+      const startTime = latestTime + faker.random.number();
+      endTime = startTime + faker.random.number();
 
-  //     await loketh.createEvent(
-  //       faker.lorem.words(),
-  //       startTime,
-  //       endTime,
-  //       price,
-  //       faker.random.number(),
-  //       { from: firstAccount }
-  //     );
-  //   });
+      let receipt = await loketh.createEvent(
+        faker.lorem.words(),
+        startTime,
+        endTime,
+        priceNative,
+        faker.random.number(),
+        NATIVE_CURRENCY,
+        { from: firstAccount }
+      );
 
-  //   it('reverts when given event ID is less than one', async () => {
-  //     await expectRevert(
-  //       loketh.withdrawMoney(0, { from: firstAccount }),
-  //       'Loketh: event ID must be at least one.'
-  //     );
-  //   });
+      eventNativeId = receipt.logs[0].args.newEventId;
 
-  //   it('reverts when given event ID is greater than events length', async () => {
-  //     await expectRevert(
-  //       loketh.withdrawMoney(eventId + 1, { from: firstAccount }),
-  //       'Loketh: event ID must be lower than `_events` length.'
-  //     );
-  //   });
+      receipt = await loketh.createEvent(
+        faker.lorem.words(),
+        startTime,
+        endTime,
+        priceToken,
+        faker.random.number(),
+        testTokenName,
+        { from: firstAccount }
+      );
 
-  //   it('reverts when sender is not the event owner', async () => {
-  //     await expectRevert(
-  //       loketh.withdrawMoney(eventId, { from: secondAccount }),
-  //       'Loketh: Sender is not the event owner.'
-  //     );
-  //   });
+      eventTokenId = receipt.logs[0].args.newEventId;
+    });
 
-  //   it('reverts when sender withdraw money before the event ends', async () => {
-  //     await expectRevert(
-  //       loketh.withdrawMoney(eventId, { from: firstAccount }),
-  //       'Loketh: Money only can be withdrawn after the event ends.'
-  //     );
-  //   });
+    it('reverts when given event ID is less than one', async () => {
+      await expectRevert(
+        loketh.withdrawMoney(0, { from: firstAccount }),
+        'Loketh: event ID must be at least one.'
+      );
+    });
 
-  //   it('reverts when there are no money left in the jar', async () => {
-  //     await time.increaseTo(endTime + faker.random.number());
+    it('reverts when given event ID is greater than events length', async () => {
+      await expectRevert(
+        loketh.withdrawMoney(eventNativeId + 1, { from: firstAccount }),
+        'Loketh: event ID must be lower than `_events` length.'
+      );
+    });
 
-  //     await expectRevert(
-  //       loketh.withdrawMoney(eventId, { from: firstAccount }),
-  //       'Loketh: There are no money left to be transferred.'
-  //     );
-  //   });
+    it('reverts when sender is not the event owner', async () => {
+      await expectRevert(
+        loketh.withdrawMoney(eventNativeId, { from: secondAccount }),
+        'Loketh: Sender is not the event owner.'
+      );
+    });
 
-  //   it('resets the money jar when withdrawing', async () => {
-  //     await loketh.buyTicket(eventId, { from: secondAccount, value: price });
-  //     await loketh.buyTicket(eventId, { from: otherAccount, value: price });
+    it('reverts when sender withdraw money before the event ends', async () => {
+      await expectRevert(
+        loketh.withdrawMoney(eventNativeId, { from: firstAccount }),
+        'Loketh: Money only can be withdrawn after the event ends.'
+      );
+    });
 
-  //     let event = await loketh.getEvent(eventId);
+    describe('withdraw native currency', () => {
+      beforeEach(async () => {
+        await loketh.buyTicket(
+          eventNativeId, { from: secondAccount, value: priceNative }
+        );
 
-  //     const prevMoneyCollected = event['7'];
+        await loketh.buyTicket(
+          eventNativeId, { from: otherAccount, value: priceNative }
+        );
+      });
 
-  //     assert.equal(prevMoneyCollected, (price * 2));
+      it('resets the money jar when withdrawing', async () => {
+        let event = await loketh.getEvent(eventNativeId);
 
-  //     await time.increaseTo(endTime + faker.random.number());
+        const prevMoneyCollected = event['7'];
 
-  //     await loketh.withdrawMoney(eventId, { from: firstAccount });
+        assert.equal(prevMoneyCollected, (priceNative * 2));
 
-  //     event = await loketh.getEvent(eventId);
+        await time.increaseTo(endTime + faker.random.number());
 
-  //     assert.equal(event['7'], 0);
-  //     assert.notEqual(event['7'], prevMoneyCollected);
-  //   });
+        await loketh.withdrawMoney(eventNativeId, { from: firstAccount });
 
-  //   it('transfers money to the event owner', async () => {
-  //     const prevBalance = await balance.current(firstAccount);
+        event = await loketh.getEvent(eventNativeId);
 
-  //     await loketh.buyTicket(eventId, { from: secondAccount, value: price });
-  //     await loketh.buyTicket(eventId, { from: otherAccount, value: price });
+        assert.equal(event['7'], 0);
+        assert.notEqual(event['7'], prevMoneyCollected);
+      });
 
-  //     await time.increaseTo(endTime + faker.random.number());
+      it('transfers money to the event owner', async () => {
+        const prevBalance = await balance.current(firstAccount);
 
-  //     await loketh.withdrawMoney(eventId, { from: firstAccount });
+        await time.increaseTo(endTime + faker.random.number());
 
-  //     const currentBalance = await balance.current(firstAccount);
+        await loketh.withdrawMoney(eventNativeId, { from: firstAccount });
 
-  //     assert.isTrue(currentBalance.gt(prevBalance));
-  //     assert.isNotTrue(currentBalance.eq(prevBalance));
-  //   });
+        const currentBalance = await balance.current(firstAccount);
 
-  //   it('subtracts the money from contract\'s balance to event owner', async () => {
-  //     await loketh.buyTicket(eventId, { from: secondAccount, value: price });
-  //     await loketh.buyTicket(eventId, { from: otherAccount, value: price });
+        assert.isTrue(currentBalance.gt(prevBalance));
+        assert.isNotTrue(currentBalance.eq(prevBalance));
+      });
 
-  //     const prevBalance = await balance.current(loketh.address);
+      it('subtracts the money from contract\'s balance', async () => {
+        const prevBalance = await balance.current(loketh.address);
 
-  //     assert.isTrue(prevBalance.eq(new BN(web3.utils.toWei('2', 'ether'))));
+        assert.isTrue(prevBalance.eq(new BN(web3.utils.toWei('2', 'ether'))));
 
-  //     await time.increaseTo(endTime + faker.random.number());
+        await time.increaseTo(endTime + faker.random.number());
 
-  //     await loketh.withdrawMoney(eventId, { from: firstAccount });
+        await loketh.withdrawMoney(eventNativeId, { from: firstAccount });
 
-  //     const newBalance = await balance.current(loketh.address);
+        const newBalance = await balance.current(loketh.address);
 
-  //     assert.isNotTrue(newBalance.eq(new BN(web3.utils.toWei('2', 'ether'))));
-  //     assert.isTrue(newBalance.lt(prevBalance));
-  //     assert.isTrue(newBalance.eq(new BN(0)));
-  //   });
+        assert.isNotTrue(newBalance.eq(new BN(web3.utils.toWei('2', 'ether'))));
+        assert.isTrue(newBalance.lt(prevBalance));
+        assert.isTrue(newBalance.eq(new BN(0)));
+      });
 
-  //   it('emits `MoneyWithdrawn` after successfully withdrawn', async () => {
-  //     await loketh.buyTicket(eventId, { from: secondAccount, value: price });
-  //     await loketh.buyTicket(eventId, { from: otherAccount, value: price });
+      it('emits `MoneyWithdrawn` after successfully withdrawn', async () => {
+        await time.increaseTo(endTime + faker.random.number());
 
-  //     await time.increaseTo(endTime + faker.random.number());
+        const receipt = await loketh.withdrawMoney(
+          eventNativeId, { from: firstAccount }
+        );
 
-  //     const receipt = await loketh.withdrawMoney(eventId, { from: firstAccount });
+        await expectEvent(receipt, 'MoneyWithdrawn', {
+          eventId: new BN(eventNativeId),
+          recipient: firstAccount,
+          amount: (new BN(web3.utils.toWei('2', 'ether')))
+        });
+      });
+    });
 
-  //     await expectEvent(receipt, 'MoneyWithdrawn', {
-  //       eventId: new BN(eventId),
-  //       recipient: firstAccount,
-  //       amount: (new BN(price)).mul(new BN(2))
-  //     });
-  //   });
-  // });
+    describe('withdraw token', () => {
+      beforeEach(async () => {
+        await testToken.approve(
+          loketh.address, priceToken, { from: secondAccount }
+        );
+        await loketh.buyTicket(eventTokenId, { from: secondAccount });
+
+        await testToken.approve(
+          loketh.address, priceToken, { from: otherAccount }
+        );
+        await loketh.buyTicket(eventTokenId, { from: otherAccount });
+      });
+
+      it('resets the money jar when withdrawing', async () => {
+        let event = await loketh.getEvent(eventTokenId);
+
+        const prevMoneyCollected = event['7'];
+
+        assert.equal(prevMoneyCollected, (priceToken * 2));
+
+        await time.increaseTo(endTime + faker.random.number());
+
+        await loketh.withdrawMoney(eventTokenId, { from: firstAccount });
+
+        event = await loketh.getEvent(eventTokenId);
+
+        assert.equal(event['7'], 0);
+        assert.notEqual(event['7'], prevMoneyCollected);
+      });
+
+      it('transfers money to the event owner', async () => {
+        const prevBalance = await testToken.balanceOf(firstAccount);
+
+        await time.increaseTo(endTime + faker.random.number());
+
+        await loketh.withdrawMoney(eventTokenId, { from: firstAccount });
+
+        const currentBalance = await testToken.balanceOf(firstAccount);
+
+        assert.isTrue(currentBalance.gt(prevBalance));
+        assert.isNotTrue(currentBalance.eq(prevBalance));
+      });
+
+      it('subtracts the money from contract\'s balance', async () => {
+        const prevBalance = await testToken.balanceOf(loketh.address);
+
+        assert.isTrue(prevBalance.eq(new BN((priceToken * 2).toString())));
+
+        await time.increaseTo(endTime + faker.random.number());
+
+        await loketh.withdrawMoney(eventTokenId, { from: firstAccount });
+
+        const newBalance = await testToken.balanceOf(loketh.address);
+
+        assert.isNotTrue(newBalance.eq(new BN((priceToken * 2).toString())));
+        assert.isTrue(newBalance.lt(prevBalance));
+        assert.isTrue(newBalance.eq(new BN(0)));
+      });
+
+      it('emits `MoneyWithdrawn` after successfully withdrawn', async () => {
+        await time.increaseTo(endTime + faker.random.number());
+
+        const receipt = await loketh.withdrawMoney(
+          eventTokenId, { from: firstAccount }
+        );
+
+        await expectEvent(receipt, 'MoneyWithdrawn', {
+          eventId: new BN(eventTokenId),
+          recipient: firstAccount,
+          amount: (new BN((priceToken * 2).toString()))
+        });
+      });
+    });
+  });
 
   // describe('eventsOf', () => {
   //   it('returns total number of events owned by given address', async () => {
