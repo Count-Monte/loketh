@@ -1153,26 +1153,17 @@ contract('Loketh', accounts => {
     });
   });
 
-  // describe('totalSupportedTokens', () => {
-  //   it('returns the total number of supported tokens', async () => {
-  //     let totalSupportedTokens = await loketh.totalSupportedTokens();
-  //     assert.equal(totalSupportedTokens, 0);
+  describe('totalSupportedTokens', () => {
+    it('returns the total number of supported tokens', async () => {
+      let totalSupportedTokens = await loketh.totalSupportedTokens();
+      assert.equal(totalSupportedTokens, 0);
 
-  //     const startTime = latestTime + faker.random.number();
+      await loketh.addNewToken(
+        testTokenName, testToken.address, { from: firstAccount }
+      );
 
-  //     await loketh.createEvent(
-  //       faker.lorem.words(),
-  //       startTime,
-  //       startTime + faker.random.number(),
-  //       faker.random.number(),
-  //       faker.random.number(),
-  //       { from: otherAccount }
-  //     );
-
-  //     await loketh.addNewToken(testTokenName, testToken.address, { from: otherAccount });
-
-  //     totalSupportedTokens = await loketh.totalSupportedTokens();
-  //     assert.equal(totalSupportedTokens, 1);
-  //   });
-  // });
+      totalSupportedTokens = await loketh.totalSupportedTokens();
+      assert.equal(totalSupportedTokens, 1);
+    });
+  });
 });
